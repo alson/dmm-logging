@@ -1,16 +1,22 @@
 #!/usr/bin/python3
-from __future__ import print_function
 
 import time
 import datetime
 import csv
 import os
-from Adafruit_BME280 import *
+import board
+import busio
+import adafruit_bme280
 
 OUTPUT_FILE='thp_log.csv'
 SAMPLE_INTERVAL=5
 
-sensor = BME280(t_mode=BME280_OSAMPLE_16, p_mode=BME280_OSAMPLE_16, h_mode=BME280_OSAMPLE_16, busnum=2, forced_mode=True)
+i2c = busio.I2C(board.SCL, board.SDA)
+sensor = adafruit_bme280.Adafruit_BME280_I2C(i2c)
+sensor.mode = adafruit_bme280.MODE_FORCE
+sensor.overscan_pressure = adafruit_bme280.OVERSCAN_X16
+sensor.overscan_humidity = adafruit_bme280.OVERSCAN_X16
+sensor.overscan_temperature = adafruit_bme280.OVERSCAN_X16
 
 with open(OUTPUT_FILE, 'a') as csv_file:
     initial_size = os.fstat(csv_file.fileno()).st_size
@@ -18,9 +24,9 @@ with open(OUTPUT_FILE, 'a') as csv_file:
     if initial_size == 0:
         csvw.writeheader()
     while True:
-        degrees = sensor.read_temperature()
-        pascals = sensor.read_pressure()
-        humidity = sensor.read_humidity()
+        degrees = sensor.temperature
+        pascals = sensor.pressure
+        humidity = sensor.humidity
         csvw.writerow({
             'datetime': datetime.datetime.now().isoformat(),
             'temperature': degrees, 
