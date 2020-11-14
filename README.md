@@ -23,6 +23,6 @@ Scripts:
 
 Quick-and-dirty test (spotting a pattern yet) of Datron 4910 against Fluke 732A and EDC MV106. Various DMMs are used as nullmeters to compare the 10V output of the several references. It measures the four individual 10V reference outputs of the 4910 against the average output, and the Fluke 732A and EDC MV106 against the 4910 average output.
 
-Scripts
+Scripts:
 * `k199-x2-3458A-x2-k2000-x2-D4910-F732A-MV106-log.py`: Log difference between 10V references
 * `plot-F732A-mv106-d4910.py`: Plot the results
