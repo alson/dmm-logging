@@ -3,6 +3,7 @@ name = "dmm-logging"
 version = "0.1.0"
 description = "Scripts to log data from DMMs"
 authors = ["Alson van der Meulen <git@alm.nufan.net>"]
+license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.8"
