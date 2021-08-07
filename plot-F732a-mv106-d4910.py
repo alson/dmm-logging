@@ -3,7 +3,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from common_plotting import read_data, plot, hours
+from common_plotting import read_data, plot, months, days7, monthsFmt
 
 filenames = [
     'k199-x2-3458A-x2-k2000-x2-D4910-F732A-MV106-log.csv',
@@ -18,6 +18,6 @@ axis2_columns = ['k199_1_f732a_mv106']
 thp2, data_dict = read_data(filenames)
 combined_data = pd.concat(data_dict.values(), sort=True)
 plot(thp2, combined_data, axis1_columns, axis2_columns, column_transformation_plot=lambda c: (c-c.mean())*1e5,
-     xminor_locator=hours)
+     xmajor_locator=months, xminor_locator=days7, xmajor_formatter=monthsFmt)
 
 plt.show()
