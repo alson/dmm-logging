@@ -28,7 +28,7 @@ with open(OUTPUT_FILE, 'a') as csv_file:
         pascals = sensor.pressure
         humidity = sensor.humidity
         csvw.writerow({
-            'datetime': datetime.datetime.now().isoformat(),
+            'datetime': datetime.datetime.utcnow().isoformat(),
             'temperature': degrees, 
             'pressure': pascals,
             'humidity': humidity,
