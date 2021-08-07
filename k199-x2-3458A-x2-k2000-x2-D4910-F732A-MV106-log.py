@@ -29,38 +29,38 @@ def finish_acal_3458a(ag3458a):
     ag3458a._write('DISP OFF,"                 "')
 
 def init_func():
-    k199_25 = ivi.keithley.keithley199("TCPIP::172.19.0.71::gpib,25::INSTR",
+    k199_25 = ivi.keithley.keithley199("TCPIP::gpib1::gpib,25::INSTR",
             reset=True)
     k199_25._interface.timeout = 60
     k199_25.measurement_function = 'dc_volts'
     k199_25.range = 1e-3
-    k199_26 = ivi.keithley.keithley199("TCPIP::172.19.0.71::gpib,26::INSTR",
+    k199_26 = ivi.keithley.keithley199("TCPIP::gpib1::gpib,26::INSTR",
             reset=True)
     k199_26._interface.timeout = 60
     k199_26.measurement_function = 'dc_volts'
     k199_26.range = 1e-3
-    k2000 = ivi.keithley.keithley2000("TCPIP::172.19.0.71::gpib,16::INSTR",
+    k2000 = ivi.keithley.keithley2000("TCPIP::gpib1::gpib,16::INSTR",
             id_query=True)
     if not DEBUG:
         k2000._write(':DISPLAY:ENABLE OFF')
     k2000.measurement_function = 'dc_volts'
     k2000.range = 1e-3
     k2000._write(':VOLT:DC:NPLC 10')
-    k2000_20 = ivi.keithley.keithley2000("TCPIP::172.19.0.71::gpib,17::INSTR",
+    k2000_20 = ivi.keithley.keithley2000("TCPIP::gpib1::gpib,17::INSTR",
             id_query=True)
     if not DEBUG:
         k2000_20._write(':DISPLAY:ENABLE OFF')
     k2000_20.measurement_function = 'dc_volts'
     k2000_20.range = 1e-3
     k2000_20._write(':VOLT:DC:NPLC 10')
-    ag3458a_1 = ivi.agilent.agilent3458A("TCPIP::172.19.0.71::gpib,21::INSTR",
+    ag3458a_1 = ivi.agilent.agilent3458A("TCPIP::gpib1::gpib,21::INSTR",
             reset=True)
     ag3458a_1._interface.timeout = 60
     ag3458a_1.measurement_function = 'dc_volts'
     ag3458a_1.range = 1e-3
     temp_1 = float(ag3458a_1._ask('TEMP?'))
     ag3458a_1.last_temp = datetime.datetime.utcnow()
-    ag3458a_2 = ivi.agilent.agilent3458A("TCPIP::172.19.0.71::gpib,20::INSTR",
+    ag3458a_2 = ivi.agilent.agilent3458A("TCPIP::gpib1::gpib,20::INSTR",
             reset=True)
     ag3458a_2._interface.timeout = 60
     ag3458a_2.measurement_function = 'dc_volts'

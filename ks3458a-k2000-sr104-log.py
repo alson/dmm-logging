@@ -50,14 +50,14 @@ def check_3458a_error(ag3458a):
 
 
 def init_func():
-    k2000 = ivi.keithley.keithley2000("TCPIP::172.19.0.71::gpib,16::INSTR",
+    k2000 = ivi.keithley.keithley2000("TCPIP::gpib1::gpib,16::INSTR",
             id_query=True)
     k2000._write(':DISPLAY:ENABLE OFF')
     k2000.measurement_function = 'four_wire_resistance'
     k2000.range = 10e3
     k2000._write(':FRES:NPLC 10')
 
-    ag3458a_2 = ivi.agilent.agilent3458A("TCPIP::172.19.0.71::gpib,20::INSTR",
+    ag3458a_2 = ivi.agilent.agilent3458A("TCPIP::gpib1::gpib,20::INSTR",
             reset=True)
     ag3458a_2.measurement_function = 'four_wire_resistance'
     ag3458a_2.range = 10e3

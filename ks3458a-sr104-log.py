@@ -50,7 +50,7 @@ def check_3458a_error(ag3458a):
 
 
 def init_func():
-    ag3458a_2 = ivi.agilent.agilent3458A("TCPIP::172.19.0.71::gpib,20::INSTR",
+    ag3458a_2 = ivi.agilent.agilent3458A("TCPIP::gpib1::gpib,20::INSTR",
             reset=True)
     ag3458a_2.measurement_function = 'four_wire_resistance'
     ag3458a_2.range = 10e3
