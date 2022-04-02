@@ -55,7 +55,7 @@ def init_func():
     ag3458a_2.measurement_function = 'four_wire_resistance'
     ag3458a_2.range = 10e3
     ag3458a_2._write('OCOMP ON')
-    ag3458a_2._write('DELAY 1')
+    ag3458a_2._write('DELAY 5')
     temp_2 = float(ag3458a_2._ask('TEMP?'))
     ag3458a_2.last_temp = datetime.datetime.utcnow()
     if DEBUG:
