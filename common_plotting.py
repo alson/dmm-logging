@@ -21,13 +21,13 @@ def add_thp(thp, data):
 
 
 def read_data(filenames):
-    thp2 = pd.read_csv('thp_log2.csv', parse_dates=['datetime'])
-    thp2_pa = thp2.loc[thp2['pressure'] > 10000, 'pressure']
-    thp2.loc[thp2['pressure'] > 10000, 'pressure'] = thp2_pa / 100
-    thp2_sorted = thp2.set_index('datetime').sort_values('datetime')
-    data_dict = {filename: add_thp(thp2_sorted, pd.read_csv(filename, parse_dates=['datetime']))
+    thp = pd.read_csv('thp_log.csv', parse_dates=['datetime'])
+    thp_pa = thp.loc[thp['pressure'] > 10000, 'pressure']
+    thp.loc[thp['pressure'] > 10000, 'pressure'] = thp_pa / 100
+    thp_sorted = thp.set_index('datetime').sort_values('datetime')
+    data_dict = {filename: add_thp(thp_sorted, pd.read_csv(filename, parse_dates=['datetime']))
                  for filename in filenames}
-    return thp2_sorted, data_dict
+    return thp_sorted, data_dict
 
 
 def filter_column_on_percentile(data, column=None):
@@ -113,7 +113,7 @@ def plot_tempco(data, ax, axis1_columns, axis2_columns, column_transformation_ab
     for my_ax, columns in ((ax, axis1_columns), (par1, axis2_columns)):
         ymin = None
         ymax = None
-        for column_name in axis1_columns:
+        for column_name in columns:
             column_data = data.dropna(subset=[column_name])
             transformed_absolute = column_transformation_absolute(column_data[column_name])
             transformed_plot = column_transformation_plot(transformed_absolute)
