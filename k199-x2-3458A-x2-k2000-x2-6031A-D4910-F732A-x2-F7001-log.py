@@ -151,7 +151,7 @@ if __name__ == '__main__':
     inits = init_func()
 
     last_csvw_write = datetime.datetime(2018,1,1)
-    with open(OUTPUT_FILE, 'a') as csv_file:
+    with open(OUTPUT_FILE, 'a', newline='') as csv_file:
         initial_size = os.fstat(csv_file.fileno()).st_size
         csvw = csv.DictWriter(csv_file, fieldnames=FIELDNAMES)
         if initial_size == 0:

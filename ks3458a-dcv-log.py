@@ -18,7 +18,7 @@ STABLE_THRESHOLD = 1e-3 # Should be stable within 0.1%
 MIN_VALUE = 9.9
 STABLE_WAIT_TIME_SECONDS = 10
 
-DEBUG = True
+DEBUG = False
 
 class State(Enum):
     WAITING = auto()
@@ -44,18 +44,18 @@ def acal_3458a(ag3458a, temp):
     finish_acal_3458a(ag3458a)
 
 def ag3458a_high_accuracy(ag3458a):
-    ag3458a._is_high_speed = False
+    ag3458a.is_high_speed = False
     ag3458a._write('OCOMP ON; DELAY 1; NDIG 9; NPLC 100')
 
 def ag3458a_high_speed(ag3458a):
-    ag3458a._is_high_speed = True
+    ag3458a.is_high_speed = True
     ag3458a._write('OCOMP OFF; DELAY 0; NPLC 1')
     time.sleep(3)
 
 def init_func():
     ag3458a_2 = ivi.agilent.agilent3458A("TCPIP::gpib1::gpib,20::INSTR",
             reset=True)
-    ag3458a_2._interface.timeout = 30
+    ag3458a_2._interface.timeout = 120
     ag3458a_2._is_high_speed = False
     ag3458a_2._write('DISP ON')
     ag3458a_2.measurement_function = 'dc_volts'
@@ -66,8 +66,8 @@ def init_func():
     if DEBUG:
         ag3458a_2.last_acal = datetime.datetime.utcnow()
         ag3458a_2.last_acal_temp = temp_2
-        ag3458a_2.last_acal_cal72 = 'test'
-        #finish_acal_3458a(ag3458a_2)
+        ag3458a_2.last_acal_cal72 = 'keep'
+        # finish_acal_3458a(ag3458a_2)
     else:
         acal_3458a(ag3458a_2, temp_2)
     return {'ag3458a_2': ag3458a_2 }
@@ -89,7 +89,7 @@ def read_row(ag3458a_2):
         acal_3458a(ag3458a_2, temp_2)
     row['datetime'] = datetime.datetime.utcnow().isoformat()
     ag3458a_2.measurement.initiate()
-    if not ag3458a_2._is_high_speed:
+    if not ag3458a_2.is_high_speed:
         time.sleep(SAMPLE_INTERVAL)
     row['ag3458a_2_dcv'] = ag3458a_2.measurement.fetch(0)
     row['temp_2'] = temp_2
@@ -103,7 +103,7 @@ if __name__ == '__main__':
     readline.parse_and_bind('tab: self-insert')
 
     last_csvw_write = datetime.datetime(2018,1,1)
-    with open(OUTPUT_FILE, 'a') as csv_file:
+    with open(OUTPUT_FILE, 'a', newline='') as csv_file:
         initial_size = os.fstat(csv_file.fileno()).st_size
         csvw = csv.DictWriter(csv_file, fieldnames=FIELDNAMES)
         if initial_size == 0:
