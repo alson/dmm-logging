@@ -18,7 +18,7 @@ sensor.overscan_pressure = adafruit_bme280.OVERSCAN_X16
 sensor.overscan_humidity = adafruit_bme280.OVERSCAN_X16
 sensor.overscan_temperature = adafruit_bme280.OVERSCAN_X16
 
-with open(OUTPUT_FILE, 'a') as csv_file:
+with open(OUTPUT_FILE, 'a', newline='') as csv_file:
     initial_size = os.fstat(csv_file.fileno()).st_size
     csvw = csv.DictWriter(csv_file, fieldnames=('datetime', 'temperature', 'pressure', 'humidity'))
     if initial_size == 0:

@@ -19,6 +19,7 @@ if DEBUG:
 def acal_3458a(ag3458a, temp):
     ag3458a.acal.start_dcv()
     ag3458a.acal.start_ohms()
+    ag3458a.utility.display = 'on'
 
 
 def init_func():
@@ -96,7 +97,7 @@ if __name__ == '__main__':
     inits = init_func()
 
     last_csvw_write = datetime.datetime(2018, 1, 1)
-    with open(OUTPUT_FILE, 'a') as csv_file:
+    with open(OUTPUT_FILE, 'a', newline='') as csv_file:
         initial_size = os.fstat(csv_file.fileno()).st_size
         csvw = csv.DictWriter(csv_file, fieldnames=FIELDNAMES)
         if initial_size == 0:
