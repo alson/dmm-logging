@@ -16,38 +16,9 @@ DEBUG = False
 if DEBUG:
     WRITE_INTERVAL_SECONDS = 0
 
-
-def start_acal_3458a_dcv(ag3458a, temp):
-    ag3458a._write('ACAL DCV')
-    ag3458a.last_acal = datetime.datetime.utcnow()
-    ag3458a.last_acal_temp = temp
-
-
-def start_acal_3458a_ohms(ag3458a, temp):
-    ag3458a._write('ACAL OHMS')
-
-
-def finish_acal_3458a(ag3458a):
-    ag3458a.last_acal_cal72 = ag3458a._ask('CAL? 72').strip()
-    if not DEBUG:
-        ag3458a._write('DISP OFF,"                 "')
-
-
 def acal_3458a(ag3458a, temp):
-    start_acal_3458a_dcv(ag3458a, temp)
-    time.sleep(3*60)
-    check_3458a_error(ag3458a)
-    start_acal_3458a_ohms(ag3458a, temp)
-    time.sleep(12*60)
-    check_3458a_error(ag3458a)
-    finish_acal_3458a(ag3458a)
-
-
-def check_3458a_error(ag3458a):
-    errstr = ag3458a._ask('ERRSTR?')
-    if errstr != '0,"NO ERROR"':
-        ag3458a._ask('ERR?')
-        raise IOError(errstr)
+    ag3458a.acal.start_dcv()
+    ag3458a.acal.start_ohms()
 
 
 def init_func():
@@ -62,30 +33,39 @@ def init_func():
     ag3458a_2 = ivi.agilent.agilent3458A("TCPIP::gpib1::gpib,20::INSTR",
             reset=True)
     ag3458a_2.measurement_function = 'four_wire_resistance'
-    ag3458a_2.range = 100e3
-    ag3458a_2._write('OCOMP ON')
-    ag3458a_2._write('DELAY 5')
-    ag3458a_2._interface.timeout = 60
-    temp_2 = float(ag3458a_2._ask('TEMP?'))
+
+    ag3458a_2.advanced.offset_compensation = 'on'
+    # 100k
+    # ag3458a_2.range = 100e3
+    # 10k
+    ag3458a_2.range = 10e3
+    ag3458a_2.trigger_delay = 1
+    ag3458a_2._interface.timeout = 120
+    temp_2 = ag3458a_2.utility.temp
     ag3458a_2.last_temp = datetime.datetime.utcnow()
-    if True or DEBUG:
+    if DEBUG:
         ag3458a_2.last_acal = datetime.datetime.utcnow()
         ag3458a_2.last_acal_temp = temp_2
         ag3458a_2.last_acal_cal72 = 'test'
         #finish_acal_3458a(ag3458a_2)
     else:
+        ag3458a_2.last_acal = datetime.datetime.utcnow()
+        ag3458a_2.last_acal_temp = temp_2
+        # ag3458a_2.last_acal_cal72 = 'keep'
         acal_3458a(ag3458a_2, temp_2)
     return {'ag3458a_2': ag3458a_2, 'k2000': k2000}
 
+
 loop_count = 0
+
 
 def loop_func(csvw, ag3458a_2, k2000):
     global loop_count
     loop_count += 1
-    if (loop_count > 60):
-        ag3458a_2.range = 10e3
-        temp_2 = float(ag3458a_2._ask('TEMP?'))
-        acal_3458a(ag3458a_2, temp_2)
+    # if loop_count % 60 == 0:
+    #     ag3458a_2.range = 10e3
+    #     temp_2 = ag3458a_2.utility.temp
+    #     acal_3458a(ag3458a_2, temp_2)
     row = {}
     # ACAL every 24h or 1°C change in internal temperature, per manual
     do_acal_3458a_2 = False
@@ -93,7 +73,7 @@ def loop_func(csvw, ag3458a_2, k2000):
     temp_2 = None
     if ((datetime.datetime.utcnow() - ag3458a_2.last_temp).total_seconds()
             > 15 * 60):
-        temp_2 = float(ag3458a_2._ask('TEMP?'))
+        temp_2 = ag3458a_2.utility.temp
         ag3458a_2.last_temp = datetime.datetime.utcnow()
         if ((datetime.datetime.utcnow() - ag3458a_2.last_acal).total_seconds() > 24 * 3600) \
                 or (abs(ag3458a_2.last_acal_temp - temp_2) >= 1):
