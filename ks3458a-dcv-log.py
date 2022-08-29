@@ -113,9 +113,11 @@ if __name__ == '__main__':
         last_row = None
         dut_setting = None
         device_name = None
+        sample_no = 1
         while True:
             row = read_row(**inits)
-            print(row['ag3458a_2_dcv'])
+            print(f"{sample_no:3d}: row['ag3458a_2_dcv'])")
+            sample_no += 1
             # The 3458A returns 1e38
             if (not last_row) or abs(row['ag3458a_2_dcv']) >= 1e38 or abs(row['ag3458a_2_dcv']) < MIN_VALUE:
                 rel_diff = float('inf')
@@ -134,10 +136,12 @@ if __name__ == '__main__':
                     dut_setting = input('DUT setting: ')
                     readline.set_startup_hook(None)
                     time.sleep(STABLE_WAIT_TIME_SECONDS)
+                    sample_no = 1
             elif state is State.RECORDING:
                 if rel_diff >= STABLE_THRESHOLD:
                     state = State.WAITING
                     ag3458a_high_speed(inits['ag3458a_2'])
+                    sample_no = 1
                 else:
                     row['dut'] = device_name
                     row['dut_setting'] = dut_setting
