@@ -10,11 +10,10 @@ from enum import Enum, auto
 from quantiphy import Quantity
 
 OUTPUT_FILE = 'ks3458a-4w-res-w-range-log.csv'
-sample_interval = 90
 FIELDNAMES = ('datetime', 'dut', 'dut_setting', 'ag3458a_2_ohm', 'temp_2', 'last_acal_2',
         'last_acal_2_cal72', 'ag3458a_2_range')
 WRITE_INTERVAL_SECONDS = 3600
-STABLE_THRESHOLD = 1e-3 # Should be stable within 0.1%
+STABLE_THRESHOLD = 1e-3  # Should be stable within 0.1%
 STABLE_WAIT_TIME_SECONDS = 10
 
 DEBUG = False
@@ -45,7 +44,6 @@ def ag3458a_high_speed(ag3458a):
 def init_func():
     ag3458a_2 = ivi.agilent.agilent3458A("TCPIP::gpib1::gpib,20::INSTR",
             reset=True)
-    ag3458a_2._interface.timeout = 120
     ag3458a_2._is_high_speed = False
     ag3458a_2.utility.display = 'on'
     ag3458a_2.measurement_function = 'four_wire_resistance'
@@ -83,8 +81,9 @@ def read_row(ag3458a_2):
     row['datetime'] = datetime.datetime.utcnow().isoformat()
     ag3458a_2.measurement.initiate()
     if not ag3458a_2.is_high_speed:
-        time.sleep(sample_interval)
-    row['ag3458a_2_ohm'] = ag3458a_2.measurement.fetch(0)
+        row['ag3458a_2_ohm'] = ag3458a_2.measurement.fetch(360)
+    else:
+        row['ag3458a_2_ohm'] = ag3458a_2.measurement.fetch(0)
     row['temp_2'] = temp_2
     row['last_acal_2'] = ag3458a_2.last_acal.isoformat()
     row['last_acal_2_cal72'] = ag3458a_2.last_acal_cal72

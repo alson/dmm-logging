@@ -7,7 +7,6 @@ import csv
 import os
 
 OUTPUT_FILE = 'ks3458a-k2000-transfer-sr104-log.csv'
-SAMPLE_INTERVAL = 0
 FIELDNAMES = ('datetime', 'ag3458a_2_ohm', 'temp_2', 'last_acal_2',
         'last_acal_2_cal72', 'k2000_temp_ohm')
 WRITE_INTERVAL_SECONDS = 3600
@@ -41,7 +40,6 @@ def init_func():
     # 10k
     ag3458a_2.range = 10e3
     ag3458a_2.trigger_delay = 1
-    ag3458a_2._interface.timeout = 120
     temp_2 = ag3458a_2.utility.temp
     ag3458a_2.last_temp = datetime.datetime.utcnow()
     if DEBUG:
@@ -83,8 +81,7 @@ def loop_func(csvw, ag3458a_2, k2000):
         acal_3458a(ag3458a_2, temp_2)
     row['datetime'] = datetime.datetime.utcnow().isoformat()
     ag3458a_2.measurement.initiate()
-    time.sleep(70)
-    row['ag3458a_2_ohm'] = ag3458a_2.measurement.fetch(0)
+    row['ag3458a_2_ohm'] = ag3458a_2.measurement.fetch(150)
     row['temp_2'] = temp_2
     row['last_acal_2'] = ag3458a_2.last_acal.isoformat()
     row['last_acal_2_cal72'] = ag3458a_2.last_acal_cal72
