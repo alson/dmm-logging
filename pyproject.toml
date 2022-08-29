@@ -14,6 +14,7 @@ scipy = "^1.5.4"
 adafruit_bme280 = "^1.0.1"
 python-vxi11 = {git = "git@github.com:alson/python-vxi11.git"}
 python-ivi = {git = "git@github.com:alson/python-ivi.git"}
+quantiphy = "^2.17.0"
 
 [tool.poetry.dev-dependencies]
 
