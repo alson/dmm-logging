@@ -14,7 +14,7 @@ SAMPLE_INTERVAL = 0
 FIELDNAMES = ('datetime', 'dut_neg_lead', 'dut_pos_lead', 'ag3458a_1_dcv', 'temp_1', 'last_acal_1',
         'last_acal_1_cal72')
 WRITE_INTERVAL_SECONDS = 3600
-STABLE_THRESHOLD = 1e-2 # Should be stable within 10%
+STABLE_THRESHOLD = 1e-2  # Should be stable within 1%
 STABLE_WAIT_TIME_SECONDS = 10
 
 DEBUG = False
@@ -51,7 +51,7 @@ def init_func():
     ag3458a_1.utility.display = 'on'
     ag3458a_1.measurement_function = 'dc_volts'
     ag3458a_1.auto_range = 'on'
-    # ag3458a_1.range = 100e3
+    # ag3458a_1.range = 100e-3
     temp_1 = ag3458a_1.utility.temp
     ag3458a_1.last_temp = datetime.datetime.utcnow()
     if DEBUG:
