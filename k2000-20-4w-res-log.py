@@ -1,20 +1,20 @@
 #!/usr/bin/python3
 
+import argparse
 import ivi
 import time
 import datetime
 import csv
 import os
 
-OUTPUT_FILE = 'k2000-4w-res-log.csv'
+OUTPUT_FILE = 'k2000-20-4w-res-log.csv'
 SAMPLE_INTERVAL = 10
-FIELDNAMES = ('datetime', 'k2000_ohm')
+FIELDNAMES = ('datetime', 'k2000_ohm', 'dut', 'dut_setting')
 WRITE_INTERVAL_SECONDS = 3600
 DEBUG = False
 
 if DEBUG:
     WRITE_INTERVAL_SECONDS = 0
-
 
 
 def init_func():
@@ -28,14 +28,22 @@ def init_func():
     return {'k2000': k2000}
 
 
-def loop_func(csvw, k2000):
+def loop_func(csvw, dut, dut_setting, k2000):
     row = {}
     row['datetime'] = datetime.datetime.utcnow().isoformat()
+    row['dut'] = dut
+    row['dut_setting'] = dut_setting
     row['k2000_ohm'] = k2000.measurement.fetch(1)
+    print(row['k2000_ohm'])
     csvw.writerow(row)
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Log Keithley 2000 4W resistance')
+    parser.add_argument('dut', type=str)
+    parser.add_argument('dut_setting', type=str, default='', nargs='?')
+
+    args = parser.parse_args()
     inits = init_func()
 
     last_csvw_write = datetime.datetime(2018, 1, 1)
@@ -45,7 +53,7 @@ if __name__ == '__main__':
         if initial_size == 0:
             csvw.writeheader()
         while True:
-            loop_func(csvw, **inits)
+            loop_func(csvw, args.dut, args.dut_setting, **inits)
             time.sleep(SAMPLE_INTERVAL)
             if (datetime.datetime.utcnow() - last_csvw_write) \
                     > datetime.timedelta(seconds=WRITE_INTERVAL_SECONDS):

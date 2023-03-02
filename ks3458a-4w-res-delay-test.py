@@ -9,12 +9,14 @@ import readline
 from enum import Enum, auto
 from quantiphy import Quantity
 
-OUTPUT_FILE = 'ks3458a-4w-res-w-delay-log.csv'
-FIELDNAMES = ('datetime', 'dut', 'dut_setting', 'ag3458a_2_ohm', 'temp_2', 'last_acal_2',
-              'last_acal_2_cal72', 'ag3458a_2_range', 'ag3458a_2_delay')
+OUTPUT_FILE = 'ks3458a-4w-res-delay-test2.csv'
+FIELDNAMES = ('datetime', 'dut', 'dut_setting', 'cable', 'ag3458a_2_ohm', 'temp_2', 'last_acal_2',
+        'last_acal_2_cal72', 'ag3458a_2_range', 'ag3458a_2_delay')
 WRITE_INTERVAL_SECONDS = 3600
 STABLE_THRESHOLD = 1e-3  # Should be stable within 0.1%
 STABLE_WAIT_TIME_SECONDS = 10
+DELAY_VALUES = [0, 0.1, 0.2, 0.4, 0.6, 0.8, 1, 2, 3, 4, 5, 7, 10]
+# DELAY_VALUES = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1, 2, 3, 4, 5]
 
 DEBUG = False
 
@@ -28,7 +30,7 @@ if DEBUG:
 def acal_3458a(ag3458a, temp):
     ag3458a.acal.start_dcv()
     ag3458a.acal.start_ohms()
-    ag3458a.utility.display = 'on'
+    # ag3458a.utility.display = 'on'
 
 def ag3458a_high_accuracy(ag3458a):
     ag3458a.is_high_speed = False
@@ -45,11 +47,12 @@ def ag3458a_high_speed(ag3458a):
 def init_func():
     ag3458a_2 = ivi.agilent.agilent3458A("TCPIP::gpib1::gpib,20::INSTR",
             reset=True)
+    ag3458a_2._interface.timeout = 120
     ag3458a_2._is_high_speed = False
-    ag3458a_2.utility.display = 'on'
+    # ag3458a_2.utility.display = 'on'
     ag3458a_2.measurement_function = 'four_wire_resistance'
     # ag3458a_2.auto_range = 'on'
-    ag3458a_2.range = 100e3
+    ag3458a_2.range = 10e3
     temp_2 = ag3458a_2.utility.temp
     ag3458a_2.last_temp = datetime.datetime.utcnow()
     if DEBUG:
@@ -109,8 +112,11 @@ if __name__ == '__main__':
         last_row = None
         dut_setting = None
         device_name = None
+        cable_name = None
+        # sample_time = None
         sample_no = 1
         while True:
+            start_sample_time = time.time()
             row = read_row(**inits)
             print(f"{sample_no:3d}: {row['ag3458a_2_ohm']}")
             sample_no += 1
@@ -130,7 +136,12 @@ if __name__ == '__main__':
                     device_name = input('Name of device under test: ')
                     readline.set_startup_hook(lambda: readline.insert_text(dut_setting_guess))
                     dut_setting = input('DUT setting: ')
+                    if cable_name:
+                        readline.set_startup_hook(lambda: readline.insert_text(device_name))
+                    else:
+                        readline.set_startup_hook(None)
                     readline.set_startup_hook(None)
+                    cable_name = input('Cable: ')
                     time.sleep(STABLE_WAIT_TIME_SECONDS)
                     sample_no = 1
             elif state is State.RECORDING:
@@ -139,8 +150,26 @@ if __name__ == '__main__':
                     ag3458a_high_speed(inits['ag3458a_2'])
                     sample_no = 1
                 else:
+                    # if sample_no == 2:
+                    #     inits['ag3458a_2'].trigger.delay = max(DELAY_VALUES)
+                    #     start_sample_time = time.time()
+                    #     inits['ag3458a_2'].measurement.read(360)
+                    #     sample_time = time.time() - start_sample_time
+                    #     print(f"Measured sample time: {sample_time}")
+                    # else:
+                    #     time_so_far = (time.time() - start_sample_time)
+                    #     time_to_wait = sample_time - time_so_far
+                    #     if time_to_wait > 0:
+                    #         time.sleep(time_to_wait)
+                    sample_index = sample_no - 1
+                    delay_index = sample_index % len(DELAY_VALUES)
+                    delay_value = DELAY_VALUES[delay_index]
+                    inits['ag3458a_2'].trigger.delay = delay_value
+                    print(f"Delay for next reading: {delay_value}")
+                    start_sample_time = time.time()
                     row['dut'] = device_name
                     row['dut_setting'] = dut_setting
+                    row['cable'] = cable_name
                     csvw.writerow(row)
                     if (datetime.datetime.utcnow() - last_csvw_write) \
                             > datetime.timedelta(seconds=WRITE_INTERVAL_SECONDS):

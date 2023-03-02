@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import matplotlib.dates as mdates
 from pandas.plotting import register_matplotlib_converters
+from sklearn.linear_model import LinearRegression
 
 hours = mdates.HourLocator()
 hours6 = mdates.HourLocator(interval=6)
@@ -25,7 +26,7 @@ def read_data(filenames):
     thp_pa = thp.loc[thp['pressure'] > 10000, 'pressure']
     thp.loc[thp['pressure'] > 10000, 'pressure'] = thp_pa / 100
     thp_sorted = thp.set_index('datetime').sort_values('datetime')
-    data_dict = {filename: add_thp(thp_sorted, pd.read_csv(filename, parse_dates=['datetime']))
+    data_dict = {filename: add_thp(thp_sorted, pd.read_csv(filename, parse_dates=['datetime'], low_memory=False))
                  for filename in filenames}
     return thp_sorted, data_dict
 
@@ -118,11 +119,16 @@ def plot_tempco(data, ax, axis1_columns, axis2_columns, column_transformation_ab
             transformed_absolute = column_transformation_absolute(column_data[column_name])
             transformed_plot = column_transformation_plot(transformed_absolute)
             percentile_data = filter_column_on_percentile(transformed_plot)
+            # Creating a Linear Regression model on our data
+            lin = LinearRegression()
+            lin.fit(column_data[['temperature']], transformed_plot.to_numpy().reshape(-1, 1))
+
             ymin = min(ymin, percentile_data.min()) if ymin is not None else percentile_data.min()
             ymax = max(ymax, percentile_data.max()) if ymax is not None else percentile_data.max()
             c = next(colors)["color"]
             lns.append(my_ax.scatter(column_data['temperature'], transformed_plot, marker='.', label=column_name,
                                color=c, s=plotting_marker_size))
+            ax.plot(column_data['temperature'], lin.predict(column_data[['temperature']]), c=c)
         my_ax.set_ylim([ymin, ymax])
     ax.set_xlabel("Temperature (°C)")
     ax.set_ylabel(data_label_plot)

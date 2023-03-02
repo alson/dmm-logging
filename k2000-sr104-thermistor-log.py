@@ -19,6 +19,7 @@ if DEBUG:
 def init_func():
     k2000 = ivi.keithley.keithley2000("TCPIP::gpib1::gpib,16::INSTR",
             id_query=True)
+    k2000._interface.timeout = 120
     if not DEBUG:
         k2000._write(':DISPLAY:ENABLE OFF')
     k2000.measurement_function = 'four_wire_resistance'

@@ -86,7 +86,8 @@ def read_row(ag3458a_2):
                 or (abs(ag3458a_2.last_acal_temp - temp_2) >= 1):
             do_acal_3458a_2 = True
     if do_acal_3458a_2:
-        acal_3458a(ag3458a_2, temp_2)
+        #acal_3458a(ag3458a_2, temp_2)
+        pass
     row['datetime'] = datetime.datetime.utcnow().isoformat()
     ag3458a_2.measurement.initiate()
     if not ag3458a_2.is_high_speed:
@@ -116,7 +117,7 @@ if __name__ == '__main__':
         sample_no = 1
         while True:
             row = read_row(**inits)
-            print(f"{sample_no:3d}: row['ag3458a_2_dcv'])")
+            print(f"{sample_no:3d}: {row['ag3458a_2_dcv']}")
             sample_no += 1
             # The 3458A returns 1e38
             if (not last_row) or abs(row['ag3458a_2_dcv']) >= 1e38 or abs(row['ag3458a_2_dcv']) < MIN_VALUE:

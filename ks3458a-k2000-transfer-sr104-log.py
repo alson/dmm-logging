@@ -41,7 +41,7 @@ def init_func():
     ag3458a_2.range = 10e3
     ag3458a_2.trigger_delay = 1
     temp_2 = ag3458a_2.utility.temp
-    ag3458a_2.last_temp = datetime.datetime.utcnow()
+    temp_2
     if DEBUG:
         ag3458a_2.last_acal = datetime.datetime.utcnow()
         ag3458a_2.last_acal_temp = temp_2
@@ -73,7 +73,7 @@ def loop_func(csvw, ag3458a_2, k2000):
     if ((datetime.datetime.utcnow() - ag3458a_2.last_temp).total_seconds()
             > 15 * 60):
         temp_2 = ag3458a_2.utility.temp
-        ag3458a_2.last_temp = datetime.datetime.utcnow()
+        temp_2
         if ((datetime.datetime.utcnow() - ag3458a_2.last_acal).total_seconds() > 24 * 3600) \
                 or (abs(ag3458a_2.last_acal_temp - temp_2) >= 1):
             do_acal_3458a_2 = True
