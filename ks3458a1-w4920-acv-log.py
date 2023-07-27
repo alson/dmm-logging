@@ -6,10 +6,10 @@ import datetime
 import csv
 import os
 
-OUTPUT_FILE = 'ks3458a1-acv-log.csv'
+OUTPUT_FILE = 'ks3458a1-w4920-acv-log.csv'
 SAMPLE_INTERVAL = 10
 FIELDNAMES = ('datetime', 'ag3458a_1_acv', 'temp_1', 'last_acal_1',
-        'last_acal_1_cal72')
+        'last_acal_1_cal72', 'w4920_acv')
 WRITE_INTERVAL_SECONDS = 3600
 DEBUG = False
 
@@ -28,6 +28,12 @@ def init_func():
     ag3458a_1._interface.timeout = 120
     ag3458a_1.measurement_function = 'ac_volts_sync'
     ag3458a_1.range = 10
+    w4920 = ivi.datron_wavetek.wavetek4920("TCPIP::gpib4::gpib0,4::INSTR",
+                                           reset=True)
+    w4920._interface.timeout = 120
+    w4920.measurement_function = 'ac_volts'
+    w4920.range = 10
+    w4920.ac.frequency_min = 100
     temp_1 = ag3458a_1.utility.temp
     ag3458a_1.last_temp = datetime.datetime.utcnow()
     if DEBUG:
@@ -39,13 +45,13 @@ def init_func():
         ag3458a_1.last_acal_temp = temp_1
         # ag3458a_1.last_acal_cal72 = 'keep'
         acal_3458a(ag3458a_1)
-    return {'ag3458a_1': ag3458a_1}
+    return {'ag3458a_1': ag3458a_1, 'w4920': w4920}
 
 
 loop_count = 0
 
 
-def loop_func(csvw, ag3458a_1):
+def loop_func(csvw, ag3458a_1, w4920):
     global loop_count
     loop_count += 1
     # if loop_count % 60 == 0:
@@ -65,15 +71,18 @@ def loop_func(csvw, ag3458a_1):
                 or (abs(ag3458a_1.last_acal_temp - temp_1) >= 1):
             do_acal_3458a_1 = True
     if do_acal_3458a_1:
-        acal_3458a(ag3458a_1)
+        # acal_3458a(ag3458a_1)
+        pass
     row['datetime'] = datetime.datetime.utcnow().isoformat()
     ag3458a_1.measurement.initiate()
+    w4920.measurement.initiate()
     time.sleep(70)
     row['ag3458a_1_acv'] = ag3458a_1.measurement.fetch(0)
     row['temp_1'] = temp_1
     row['last_acal_1'] = ag3458a_1.last_acal.isoformat()
     row['last_acal_1_cal72'] = ag3458a_1.last_acal_cal72
-    print(row['ag3458a_1_acv'])
+    row['w4920_acv'] = w4920.measurement.fetch(0)
+    print(row['ag3458a_1_acv'], row['w4920_acv'])
     csvw.writerow(row)
 
 

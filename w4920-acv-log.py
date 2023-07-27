@@ -1,15 +1,14 @@
 #!/usr/bin/python3
 
-import argparse
 import ivi
 import time
 import datetime
 import csv
 import os
 
-OUTPUT_FILE = 'k2000-20-4w-res-log.csv'
+OUTPUT_FILE = 'w4920-acv-log.csv'
 SAMPLE_INTERVAL = 10
-FIELDNAMES = ('datetime', 'k2000_ohm', 'dut', 'dut_setting')
+FIELDNAMES = ('datetime', 'w4920_acv', 'w4920_freq')
 WRITE_INTERVAL_SECONDS = 3600
 DEBUG = False
 
@@ -18,32 +17,30 @@ if DEBUG:
 
 
 def init_func():
-    k2000 = ivi.keithley.keithley2000("TCPIP::gpib1::gpib,17::INSTR",
-            id_query=True)
-    k2000._interface.timeout = 120
-    k2000._write(':DISPLAY:ENABLE OFF')
-    k2000.measurement_function = 'four_wire_resistance'
-    k2000.range = 110
-    k2000._write(':FRES:NPLC 10')
-    return {'k2000': k2000}
+    w4920 = ivi.datron_wavetek.wavetek4920("TCPIP::gpib4::gpib0,4::INSTR",
+                                           reset=True)
+    w4920._interface.timeout = 120
+    w4920.measurement_function = 'ac_volts'
+    w4920.range = 10
+    w4920.ac.frequency_min = 100
+    return {'w4920': w4920}
 
 
-def loop_func(csvw, dut, dut_setting, k2000):
+loop_count = 0
+
+
+def loop_func(csvw, w4920):
     row = {}
     row['datetime'] = datetime.datetime.utcnow().isoformat()
-    row['dut'] = dut
-    row['dut_setting'] = dut_setting
-    row['k2000_ohm'] = k2000.measurement.fetch(1)
-    print(row['k2000_ohm'])
+    w4920.measurement.initiate()
+    time.sleep(10)
+    row['w4920_acv'] = w4920.measurement.fetch(0)
+    row['w4920_freq'] = None
+    print(f"{row['w4920_acv']} V, {row['w4920_freq']} Hz")
     csvw.writerow(row)
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Log Keithley 2000 4W resistance')
-    parser.add_argument('dut', type=str)
-    parser.add_argument('dut_setting', type=str, default='', nargs='?')
-
-    args = parser.parse_args()
     inits = init_func()
 
     last_csvw_write = datetime.datetime(2018, 1, 1)
@@ -53,7 +50,7 @@ if __name__ == '__main__':
         if initial_size == 0:
             csvw.writeheader()
         while True:
-            loop_func(csvw, args.dut, args.dut_setting, **inits)
+            loop_func(csvw, **inits)
             time.sleep(SAMPLE_INTERVAL)
             if (datetime.datetime.utcnow() - last_csvw_write) \
                     > datetime.timedelta(seconds=WRITE_INTERVAL_SECONDS):
