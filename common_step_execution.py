@@ -215,7 +215,7 @@ def generate_resistance_steps(instrument: Instrument, transfers: List[Dut]) -> L
 def execute_step(csvw, step: Union[Step, Step2, Step3], previous_step: Union[Step, Step2, Step3], inits, read_row, samples_per_step, step_soak_time):
     if not isinstance(step, Step3):
         step = step.to_step3()
-    if not isinstance(previous_step, Step3):
+    if previous_step and not isinstance(previous_step, Step3):
         previous_step = previous_step.to_step3()
     set_instrument_and_dut_safe(step, previous_step, inits)
     if step.manual_prompt:
@@ -279,6 +279,7 @@ def setup_instrument(step: Step3, previous_step: Step3, inits, step_soak_time: f
             if instrument.setting.range <= 0.105 and (
                     previous_step is None
                     or previous_instrument.setting.measurement_function != instrument.setting.measurement_function
+                    or previous_instrument.setting.range > 0.105
                     or freq_ratio < 0.98
                     or freq_ratio > 1.02):
                 if step.dut.dut_setting_cmd.value < 0.095 or step.dut.dut_setting_cmd.value > 0.105:
@@ -334,8 +335,8 @@ def set_instrument_and_dut_safe(step: Step3, previous_step: Step3, inits):
 
 
 def manual_prompt(step: Step3):
-    instrument_name = step.instruments[0].name
-    print(f'Please connect {instrument_name} to {step.dut.name} set to {step.dut.setting} for {step.dut.dut_setting_cmd.function}')
+    instrument_names = ', '.join([i.name for i in step.instruments])
+    print(f'Please connect {instrument_names} to {step.dut.name} set to {step.dut.setting} for {step.dut.dut_setting_cmd.function}')
     beep()
     input('Press enter to continue...')
 
@@ -396,7 +397,7 @@ def sample_input(step: Step3, inits, csvw, read_row, samples_per_step):
     for sample_no in range(1, samples_per_step+1):
         while True:
             print(f"{sample_no:2d}: ", end="")
-            row, has_measurement = read_row(inits)
+            row, has_measurement = read_row(inits, step.instruments)
             if has_measurement:
                 row['dut'] = step.dut.name
                 row['dut_setting'] = step.dut.setting
