@@ -10,14 +10,20 @@ This is a loose collection of scripts to collect and plot data from several DMMs
 
 ## Experiments
 
-### SR104 stability
+### Measurement tests
 
-Quick-and-dirty test that of an SR104 against a HP 3458A (aka testing the stability of the 3458A 😂).
+Testing various theories, mostly relating to the HPAK 3458A
+
+Scripts:
+* `ks3458a-4w-res-delay-test.py`: Test the effect of 4W resistance measurement on the 3458A with offset compensation on.
+* `ks3458a1-4w-res-nplc-aper-test.py`: Compare NPLC 100 vs APER 1 with resistance measurements on the 3458A.
+* `ks3458a-dcv-guard-test.py`: Test the effect of the guard open / to lo switch on the 3458A.
+
+### SR104 stability
 
 Scripts:
 * `ks3458a-sr104-log.py`: Log SR104 resistance on 3458A
 * `ks3458a-k2000-sr104-log.py`: Log SR104 resistance on 3458A and built-in thermistor on Keithley 2000
-* `plot-sr104.py`: Plot results.
 
 ## Datron 4910 stability
 
@@ -25,4 +31,19 @@ Quick-and-dirty test (spotting a pattern yet) of Datron 4910 against Fluke 732A 
 
 Scripts:
 * `k199-x2-3458A-x2-k2000-x2-D4910-F732A-MV106-log.py`: Log difference between 10V references
-* `plot-F732A-mv106-d4910.py`: Plot the results
+
+## Voltage reference comparisons
+
+Comparing the stability of various voltage references against each other and against a 3458A.
+
+Scripts:
+* `ks3458a-dcv-log.py`: Log DCV on 3458A (absolute value of references).
+* `k182-dcv-mv-log.py`: Log DCV on Keithley 182 (relative difference between references back to back).
+
+## Resistance transfers
+
+Comparing the stability of various resistance standards and calibrators against each other and against a 3458A.
+
+Scripts:
+* `ks3458a-2w-res-log.py`
+* `ks3458a-4w-res-log.py`

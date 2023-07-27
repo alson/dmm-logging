@@ -25,7 +25,7 @@ if DEBUG:
 procedure = [
     Step('F7001bat', '-10 V', DcVoltageDutSettings(range=10, value=-10), 'ag3458a_1', DcVoltageCommand(10), True),
     Step('F7001bat', '10 V', DcVoltageDutSettings(range=10, value=10), 'ag3458a_1', DcVoltageCommand(10), True),
-    Step('Datron 4700', 'short', DcVoltageDutSettings(range=10, value=0), 'ag3458a_1', DcVoltageCommand(10), True),
+    Step('Datron 4700', 'short', DcVoltageDutSettings(range=10, value=0), 'ag3458a_1', DcVoltageCommand(10)),
     Step('Datron 4700', '10 V', DcVoltageDutSettings(range=10, value=10), 'ag3458a_1', DcVoltageCommand(10)),
     Step('Datron 4700', '-10 V', DcVoltageDutSettings(range=10, value=-10), 'ag3458a_1', DcVoltageCommand(10)),
     Step('Datron 4700', '-10 V', DcVoltageDutSettings(range=10, value=-10), 'ag3458a_1', DcVoltageCommand(100)),
@@ -70,10 +70,10 @@ procedure = [
     Step('Datron 4700', '-1 V', DcVoltageDutSettings(range=1, value=-1), 'ag3458a_1', DcVoltageCommand(10)),
     Step('Datron 4700', '1 V', DcVoltageDutSettings(range=1, value=1), 'ag3458a_1', DcVoltageCommand(10)),
     Step('Datron 4700', 'short', DcVoltageDutSettings(range=10, value=0), 'ag3458a_1', DcVoltageCommand(10)),
-    Step('Datron 4700', '10 V', DcVoltageDutSettings(range=10, value=10), 'ag3458a_1', DcVoltageCommand(10)),
-    Step('Datron 4700', '-10 V', DcVoltageDutSettings(range=10, value=-10), 'ag3458a_1', DcVoltageCommand(10)),
     Step('F7001bat', '-10 V', DcVoltageDutSettings(range=10, value=-10), 'ag3458a_1', DcVoltageCommand(10), True),
     Step('F7001bat', '10 V', DcVoltageDutSettings(range=10, value=10), 'ag3458a_1', DcVoltageCommand(10), True),
+    Step('Datron 4700', '10 V', DcVoltageDutSettings(range=10, value=10), 'ag3458a_1', DcVoltageCommand(10), True),
+    Step('Datron 4700', '-10 V', DcVoltageDutSettings(range=10, value=-10), 'ag3458a_1', DcVoltageCommand(10)),
 ]
 
 
@@ -102,13 +102,13 @@ def init_func():
     else:
         ag3458a_1.last_acal = datetime.datetime.utcnow()
         ag3458a_1.last_acal_temp = temp_1
-        ag3458a_1.last_acal_cal72 = 'keep'
-        # acal_3458a(ag3458a_1)
+        # ag3458a_1.last_acal_cal72 = 'keep'
+        acal_3458a(ag3458a_1)
     d4700 = ivi.datron_wavetek.datron4700("TCPIP::gpib4::gpib0,16::INSTR")
     return {'ag3458a_1': ag3458a_1, 'd4700': d4700}
 
 
-def read_row(inits):
+def read_row(inits, instruments):
     ag3458a_1 = inits['ag3458a_1']
     row = {}
     row['datetime'] = datetime.datetime.utcnow().isoformat()

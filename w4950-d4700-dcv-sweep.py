@@ -68,7 +68,7 @@ def init_func():
     return {'w4950': w4950, 'd4700': d4700}
 
 
-def read_row(inits):
+def read_row(inits, instruments):
     w4950 = inits['w4950']
     row = {}
     row['datetime'] = datetime.datetime.utcnow().isoformat()
