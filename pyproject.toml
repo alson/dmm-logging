@@ -7,10 +7,6 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-numpy = "^1.19.4"
-pandas = "^1.1.4"
-matplotlib = "^3.3.3"
-scipy = "^1.5.4"
 adafruit_bme280 = "^1.0.1"
 python-vxi11 = {git = "git@github.com:alson/python-vxi11.git"}
 python-ivi = {git = "git@github.com:alson/python-ivi.git"}
