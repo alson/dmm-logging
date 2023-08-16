@@ -223,7 +223,7 @@ def execute_step(csvw, step: Union[Step, Step2, Step3], previous_step: Union[Ste
     print(f'Executing step: {step}')
     setup_dut(step, inits)
     setup_instrument(step, previous_step, inits, step_soak_time)
-    wait_for_settle(step, step_soak_time)
+    wait_for_settle(step, step_soak_time, step.manual_prompt)
     sample_input(step, inits, csvw, read_row, samples_per_step)
 
 
@@ -389,7 +389,9 @@ def get_dut(step: Step3, inits):
         return dut
 
 
-def wait_for_settle(step: Step3, step_soak_time):
+def wait_for_settle(step: Step3, step_soak_time, manual_prompt=False):
+    if manual_prompt:
+        time.sleep(step_soak_time * 2)
     time.sleep(step_soak_time)
 
 
