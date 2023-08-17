@@ -23,7 +23,7 @@ if DEBUG:
 
 
 procedure = [
-    Step('Fluke 5450A', 'short', Res4WDutSettings(range=10e3, value=0), 'ag3458a_2', FourWireResistanceCommand(10e3)),
+    Step('Fluke 5450A', 'short', Res4WDutSettings(range=10e3, value=0), 'ag3458a_2', FourWireResistanceCommand(10e3), True),
     Step('Fluke 5450A', '10 kOhm', Res4WDutSettings(range=10e3, value=10e3), 'ag3458a_2', FourWireResistanceCommand(10e3)),
     Step('SR104', '10 kOhm', Res4WDutSettings(range=10e3, value=10e3), 'ag3458a_2', FourWireResistanceCommand(10e3), True),
     Step('Fluke 5450A', '10 kOhm', Res4WDutSettings(range=10e3, value=10e3), 'ag3458a_2', FourWireResistanceCommand(10e3), True),
@@ -73,14 +73,14 @@ procedure = [
     Step('Fluke 5450A', '1 MOhm', Res4WDutSettings(range=1e6, value=1e6), 'ag3458a_2', FourWireResistanceCommand(10e6, 'two_wire_resistance')),
     Step('Fluke 5450A', 'short', Res4WDutSettings(range=1e6, value=0), 'ag3458a_2', FourWireResistanceCommand(10e6, 'two_wire_resistance')),
     Step('Fluke 5450A', '10 MOhm', Res4WDutSettings(range=10e6, value=10e6), 'ag3458a_2', FourWireResistanceCommand(10e6, 'two_wire_resistance')),
-    Step('P4017', '10 MOhm', Res4WDutSettings(range=10e6, value=10e6), 'ag3458a_2', FourWireResistanceCommand(10e6), True),
-    Step('Guildline 95206', '10 MOhm', Res4WDutSettings(range=10e6, value=10e6), 'ag3458a_2', FourWireResistanceCommand(10e6), True),
+    Step('P4017', '10 MOhm', Res4WDutSettings(range=10e6, value=10e6), 'ag3458a_2', FourWireResistanceCommand(10e6, 'two_wire_resistance'), True),
+    Step('Guildline 95206', '10 MOhm', Res4WDutSettings(range=10e6, value=10e6), 'ag3458a_2', FourWireResistanceCommand(10e6, 'two_wire_resistance'), True),
     Step('Fluke 5450A', '10 MOhm', Res4WDutSettings(range=10e6, value=10e6), 'ag3458a_2', FourWireResistanceCommand(10e6, 'two_wire_resistance'), True),
     Step('Fluke 5450A', '10 MOhm', Res4WDutSettings(range=10e6, value=10e6), 'ag3458a_2', FourWireResistanceCommand(100e6, 'two_wire_resistance')),
     Step('Fluke 5450A', 'short', Res4WDutSettings(range=10e6, value=0), 'ag3458a_2', FourWireResistanceCommand(100e6, 'two_wire_resistance')),
     Step('Fluke 5450A', '100 MOhm', Res4WDutSettings(range=100e6, value=100e6), 'ag3458a_2', FourWireResistanceCommand(100e6, 'two_wire_resistance')),
     Step('P4033', '100 MOhm', Res4WDutSettings(range=100e6, value=100e6), 'ag3458a_2', FourWireResistanceCommand(100e6, 'two_wire_resistance'), True),
-    Step('Fluke 5450A', '100 MOhm', Res4WDutSettings(range=100e6, value=100e6), 'ag3458a_2', FourWireResistanceCommand(100e6, 'two_wire_resistance')),
+    Step('Fluke 5450A', '100 MOhm', Res4WDutSettings(range=100e6, value=100e6), 'ag3458a_2', FourWireResistanceCommand(100e6, 'two_wire_resistance'), True),
     Step('Fluke 5450A', '10 MOhm', Res4WDutSettings(range=10e6, value=10e6), 'ag3458a_2', FourWireResistanceCommand(100e6, 'two_wire_resistance')),
     Step('Fluke 5450A', '10 MOhm', Res4WDutSettings(range=10e6, value=10e6), 'ag3458a_2', FourWireResistanceCommand(10e6, 'two_wire_resistance')),
     Step('Fluke 5450A', 'short', Res4WDutSettings(range=1e6, value=0), 'ag3458a_2', FourWireResistanceCommand(10e6, 'two_wire_resistance')),
