@@ -61,7 +61,7 @@ def init_func():
         ag3458a_2.last_acal = datetime.datetime.utcnow()
         ag3458a_2.last_acal_temp = temp_2
         # ag3458a_2.last_acal_cal72 = 'keep'
-        acal_3458a(ag3458a_2, temp_2)
+        acal_3458a(ag3458a_2)
     return {'ag3458a_2': ag3458a_2 }
 
 def read_row(ag3458a_2):
