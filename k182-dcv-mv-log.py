@@ -7,6 +7,7 @@ import csv
 import os
 import readline
 from enum import Enum, auto
+import argparse
 
 OUTPUT_FILE = 'k182-dcv-mv-log.csv'
 SAMPLE_INTERVAL = 0
@@ -52,11 +53,18 @@ def read_row(k182):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_positional_argument('output_file_suffix', nargs='?', default=None, type=str)
+    args = parser.parse_args()
+    if args.output_file_suffix:
+        output_file = OUTPUT_FILE.replace('.csv', f'-{args.output_file_suffix}.csv')
+    else:
+        output_file = OUTPUT_FILE
     inits = init_func()
     readline.parse_and_bind('tab: self-insert')
 
     last_csvw_write = datetime.datetime(2018,1,1)
-    with open(OUTPUT_FILE, 'a', newline='') as csv_file:
+    with open(output_file, 'a', newline='') as csv_file:
         initial_size = os.fstat(csv_file.fileno()).st_size
         csvw = csv.DictWriter(csv_file, fieldnames=FIELDNAMES)
         if initial_size == 0:
