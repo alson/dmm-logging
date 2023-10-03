@@ -154,6 +154,7 @@ class Step3:
     dut: Dut
     instruments: List[Instrument]
     manual_prompt: bool = False
+    run_until_interrupted: bool = False
 
     def __str__(self):
         return f'{self.dut.name} at {self.dut.setting} measured by {self.instruments[0].name} at {self.instruments[0].setting}'
@@ -414,16 +415,29 @@ def wait_for_settle(step: Step3, step_soak_time, manual_prompt=False):
 
 
 def sample_input(step: Step3, inits, csvw, read_row, samples_per_step):
-    for sample_no in range(1, samples_per_step+1):
-        while True:
-            print(f"{sample_no:2d}: ", end="")
-            row, has_measurement = read_row(inits, step.instruments)
-            if has_measurement:
-                row['dut'] = step.dut.name
-                row['dut_setting'] = step.dut.setting
-            csvw.writerow(row)
-            if has_measurement:
-                break
+    if step.run_until_interrupted:
+        sample_no = 1
+        try:
+            while True:
+                take_single_sample(step, inits, csvw, read_row, sample_no)
+                sample_no += 1
+        except KeyboardInterrupt:
+            pass
+    else:
+        for sample_no in range(1, samples_per_step+1):
+            take_single_sample(step, inits, csvw, read_row, sample_no)
+
+
+def take_single_sample(step: Step3, inits, csvw, read_row, sample_no):
+    while True:
+        print(f"{sample_no:2d}: ", end="")
+        row, has_measurement = read_row(inits, step.instruments)
+        if has_measurement:
+            row['dut'] = step.dut.name
+            row['dut_setting'] = step.dut.setting
+        csvw.writerow(row)
+        if has_measurement:
+            break
 
 
 def check_valid_value(instrument, value):
