@@ -61,6 +61,13 @@ Scripts:
 * `ks3458a-k2000-x2-sr104-log.py`: Log SR104 resistance on 3458A and built-in thermistor on Keithley 2000 and PT100 on another Keithley 2000
 * `ks3458a-sr104-log.py`: Log SR104 resistance on 3458A
 
+### Resistance temperature coefficient measurements
+
+Measure the tempco of manganin resistance standards against SR104.
+
+Scripts:
+* `ks3458a-k2000-20-res-tempco-log.py`: Transfer from SR104, then measure DUT in same range, and then back to SR104. To be extended with doing transfers more often during the measurement at different temperatures.
+
 ### ACV stability measurements
 
 Checking stability of Fluke 510A or other sources against HPAK 3458A or Wavetek 4920.
