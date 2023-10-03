@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+import logging
 import subprocess
 from dataclasses import dataclass
 from enum import Enum
@@ -8,6 +9,8 @@ from typing import Optional, List, Union
 import ivi
 import time
 import os
+
+import vxi11
 
 
 @dataclass
@@ -431,11 +434,17 @@ def sample_input(step: Step3, inits, csvw, read_row, samples_per_step):
 def take_single_sample(step: Step3, inits, csvw, read_row, sample_no):
     while True:
         print(f"{sample_no:2d}: ", end="")
-        row, has_measurement = read_row(inits, step.instruments)
-        if has_measurement:
-            row['dut'] = step.dut.name
-            row['dut_setting'] = step.dut.setting
-        csvw.writerow(row)
+        try:
+            row, has_measurement = read_row(inits, step.instruments)
+        except vxi11.vxi11.Vxi11Exception as e:
+            beep()
+            logging.error(exc_info=e)
+            has_measurement = False
+        else:
+            if has_measurement:
+                row['dut'] = step.dut.name
+                row['dut_setting'] = step.dut.setting
+            csvw.writerow(row)
         if has_measurement:
             break
 
