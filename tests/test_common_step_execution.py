@@ -17,21 +17,25 @@ class TestGenerateResistanceTransferSteps:
         assert result[0].dut.dut_setting_cmd.value == reference.dut_setting_cmd.value
         assert result[0].instruments[0].setting.range == reference.dut_setting_cmd.range
         assert result[0].instruments[0].name == instrument.name
+        assert result[0].manual_prompt
 
         assert result[1].dut.name == transfer.name
         assert result[1].dut.dut_setting_cmd.value == reference.dut_setting_cmd.value
         assert result[1].instruments[0].setting.range == reference.dut_setting_cmd.range
         assert result[1].instruments[0].name == instrument.name
+        assert result[1].manual_prompt
 
         assert result[2].dut.name == transfer.name
         assert result[2].dut.dut_setting_cmd.value == target_value
         assert result[2].instruments[0].setting.range == reference.dut_setting_cmd.range
         assert result[2].instruments[0].name == instrument.name
+        assert not result[2].manual_prompt
 
         assert result[3].dut.name == transfer.name
         assert result[3].dut.dut_setting_cmd.value == target_value
         assert result[3].instruments[0].setting.range == target_value
         assert result[3].instruments[0].name == instrument.name
+        assert not result[3].manual_prompt
 
     # Generates resistance transfer steps for reverse transfer direction
     def test_reverse_transfer_direction_from_large_to_small(self):
@@ -49,21 +53,25 @@ class TestGenerateResistanceTransferSteps:
         assert result[0].dut.dut_setting_cmd.value == target_value
         assert result[0].instruments[0].setting.range == target_value
         assert result[0].instruments[0].name == instrument.name
+        assert result[0].manual_prompt
 
         assert result[1].dut.name == transfer.name
         assert result[1].dut.dut_setting_cmd.value == target_value
         assert result[1].instruments[0].setting.range == reference.dut_setting_cmd.range
         assert result[1].instruments[0].name == instrument.name
+        assert not result[1].manual_prompt
 
         assert result[2].dut.name == transfer.name
         assert result[2].dut.dut_setting_cmd.value == reference.dut_setting_cmd.value
         assert result[2].instruments[0].setting.range == reference.dut_setting_cmd.value
         assert result[2].instruments[0].name == instrument.name
+        assert not result[2].manual_prompt
 
         assert result[3].dut.name == reference.name
         assert result[3].dut.dut_setting_cmd.value == reference.dut_setting_cmd.value
         assert result[3].instruments[0].setting.range == reference.dut_setting_cmd.value
         assert result[3].instruments[0].name == instrument.name
+        assert result[3].manual_prompt
 
     def test_forward_transfer_direction_from_small_to_large(self):
         instrument = Instrument('ag3458a_1', InstrumentSettingCommand())
@@ -80,21 +88,25 @@ class TestGenerateResistanceTransferSteps:
         assert result[0].dut.dut_setting_cmd.value == reference.dut_setting_cmd.value
         assert result[0].instruments[0].setting.range == reference.dut_setting_cmd.range
         assert result[0].instruments[0].name == instrument.name
+        assert result[0].manual_prompt
 
         assert result[1].dut.name == transfer.name
         assert result[1].dut.dut_setting_cmd.value == reference.dut_setting_cmd.value
         assert result[1].instruments[0].setting.range == reference.dut_setting_cmd.range
         assert result[1].instruments[0].name == instrument.name
+        assert result[1].manual_prompt
 
         assert result[2].dut.name == transfer.name
         assert result[2].dut.dut_setting_cmd.value == reference.dut_setting_cmd.value
         assert result[2].instruments[0].setting.range == target_value
         assert result[2].instruments[0].name == instrument.name
+        assert not result[2].manual_prompt
 
         assert result[3].dut.name == transfer.name
         assert result[3].dut.dut_setting_cmd.value == target_value
         assert result[3].instruments[0].setting.range == target_value
         assert result[3].instruments[0].name == instrument.name
+        assert not result[3].manual_prompt
 
     # Generates resistance transfer steps for reverse transfer direction
     def test_reverse_transfer_direction_from_small_to_large(self):
@@ -112,21 +124,25 @@ class TestGenerateResistanceTransferSteps:
         assert result[0].dut.dut_setting_cmd.value == target_value
         assert result[0].instruments[0].setting.range == target_value
         assert result[0].instruments[0].name == instrument.name
+        assert result[0].manual_prompt
 
         assert result[1].dut.name == transfer.name
         assert result[1].dut.dut_setting_cmd.value == reference.dut_setting_cmd.value
         assert result[1].instruments[0].setting.range == target_value
         assert result[1].instruments[0].name == instrument.name
+        assert not result[1].manual_prompt
 
         assert result[2].dut.name == transfer.name
         assert result[2].dut.dut_setting_cmd.value == reference.dut_setting_cmd.value
         assert result[2].instruments[0].setting.range == reference.dut_setting_cmd.value
         assert result[2].instruments[0].name == instrument.name
+        assert not result[2].manual_prompt
 
         assert result[3].dut.name == reference.name
         assert result[3].dut.dut_setting_cmd.value == reference.dut_setting_cmd.value
         assert result[3].instruments[0].setting.range == reference.dut_setting_cmd.value
         assert result[3].instruments[0].name == instrument.name
+        assert result[3].manual_prompt
 
     def test_transfer_same_value(self):
         instrument = Instrument('ag3458a_1', InstrumentSettingCommand())
@@ -143,8 +159,9 @@ class TestGenerateResistanceTransferSteps:
         assert result[0].dut.dut_setting_cmd.value == reference.dut_setting_cmd.value
         assert result[0].instruments[0].setting.range == reference.dut_setting_cmd.range
         assert result[0].instruments[0].name == instrument.name
+        assert result[0].manual_prompt
 
- 
+
 class TestGetValueDecadeForInstrument:
     # Returns the correct decade for a value within the instrument range.
     def test_correct_decade_within_range(self):
@@ -186,11 +203,11 @@ class TestGenerateResistanceSteps:
         dut3 = Dut("DUT3", "setting3", Res4WDutSettings(value=1000))
         transfers = [dut1, dut2, dut3]
         expected_result = [
-            Step3(dut1, [instrument.with_range(dut1.dut_setting_cmd.value)]),
+            Step3(dut1, [instrument.with_range(dut1.dut_setting_cmd.value)], True),
             Step3(dut1, [instrument.with_range(dut2.dut_setting_cmd.value)]),
-            Step3(dut2, [instrument.with_range(dut2.dut_setting_cmd.value)]),
+            Step3(dut2, [instrument.with_range(dut2.dut_setting_cmd.value)], True),
             Step3(dut2, [instrument.with_range(dut3.dut_setting_cmd.value)]),
-            Step3(dut3, [instrument.with_range(dut3.dut_setting_cmd.value)])
+            Step3(dut3, [instrument.with_range(dut3.dut_setting_cmd.value)], True)
         ]
         assert list(generate_resistance_steps(instrument, transfers)) == expected_result
 
@@ -207,7 +224,7 @@ class TestGenerateResistanceSteps:
         dut = Dut("DUT", "setting", Res4WDutSettings(value=1))
         transfers = [dut]
         expected_result = [
-            Step3(dut, [instrument.with_range(dut.dut_setting_cmd.value)])
+            Step3(dut, [instrument.with_range(dut.dut_setting_cmd.value)], True)
         ]
         assert list(generate_resistance_steps(instrument, transfers)) == expected_result
 

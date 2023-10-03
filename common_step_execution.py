@@ -218,9 +218,14 @@ def generate_resistance_steps(instrument: Instrument, transfers: List[Dut]) -> L
         if previous_transfer:
             if previous_decade_value < transfer_decade_value:
                 yield Step3(previous_transfer, [instrument.with_range(transfer.dut_setting_cmd.value)])
+                yield Step3(transfer, [instrument.with_range(transfer.dut_setting_cmd.value)], previous_transfer.name != transfer.name)
             elif previous_decade_value > transfer_decade_value:
-                yield Step3(transfer, [instrument.with_range(previous_transfer.dut_setting_cmd.value)])
-        yield Step3(transfer, [instrument.with_range(transfer.dut_setting_cmd.value)])
+                yield Step3(transfer, [instrument.with_range(previous_transfer.dut_setting_cmd.value)], previous_transfer.name != transfer.name)
+                yield Step3(transfer, [instrument.with_range(transfer.dut_setting_cmd.value)])
+            else:
+                yield Step3(transfer, [instrument.with_range(transfer.dut_setting_cmd.value)], previous_transfer.name != transfer.name)
+        else:
+            yield Step3(transfer, [instrument.with_range(transfer.dut_setting_cmd.value)], True)
         previous_transfer = transfer
         previous_decade_value = transfer_decade_value
 
