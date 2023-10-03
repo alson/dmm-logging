@@ -181,20 +181,22 @@ def generate_resistance_transfer_steps(instrument: Instrument, reference: Dut, t
         transfers = [reference] + generate_resistance_range(instrument, transfer, reference.dut_setting_cmd.value, target_value)
     elif direction == TransferDirection.REVERSE:
         transfers = generate_resistance_range(instrument, transfer, target_value, reference.dut_setting_cmd.value) + [reference]
-    return generate_resistance_steps(instrument, transfers)
+    return list(generate_resistance_steps(instrument, transfers))
 
 
 def generate_resistance_range(instrument: Instrument, transfer: Dut, start_value: float, end_value: float) -> List[Dut]:
     start_decade = get_value_decade_for_instrument(instrument, start_value)
     end_decade = get_value_decade_for_instrument(instrument, end_value)
-    return [Dut(transfer.name, transfer.setting, Res4WDutSettings(value=value)) for value in decade_transfer_range(start_decade, end_decade)]
+    if start_decade == end_decade:
+        return []
+    return [Dut(transfer.name, transfer.setting, Res4WDutSettings(value=value, range=value)) for value in decade_transfer_range(start_decade, end_decade)]
 
 
 def decade_transfer_range(start_decade: int, end_decade: int) -> List[float]:
     if start_decade < end_decade:
         return decade_transfer_unidirectional(start_decade, end_decade)
     else:
-        return decade_transfer_unidirectional(end_decade, start_decade)
+        return list(reversed(decade_transfer_unidirectional(end_decade, start_decade)))
 
 
 def decade_transfer_unidirectional(start_decade: int, end_decade: int) -> List[float]:
@@ -209,7 +211,18 @@ def get_value_decade_for_instrument(instrument: Instrument, value: float) -> int
 
 
 def generate_resistance_steps(instrument: Instrument, transfers: List[Dut]) -> List[Step3]:
-    return [Step3(transfer, [instrument.with_range(transfer.dut_setting_cmd.value)]) for transfer in transfers]
+    previous_transfer = None
+    previous_decade_value = None
+    for transfer in transfers:
+        transfer_decade_value = get_value_decade_for_instrument(instrument, transfer.dut_setting_cmd.value)
+        if previous_transfer:
+            if previous_decade_value < transfer_decade_value:
+                yield Step3(previous_transfer, [instrument.with_range(transfer.dut_setting_cmd.value)])
+            elif previous_decade_value > transfer_decade_value:
+                yield Step3(transfer, [instrument.with_range(previous_transfer.dut_setting_cmd.value)])
+        yield Step3(transfer, [instrument.with_range(transfer.dut_setting_cmd.value)])
+        previous_transfer = transfer
+        previous_decade_value = transfer_decade_value
 
 
 def execute_step(csvw, step: Union[Step, Step2, Step3], previous_step: Union[Step, Step2, Step3], inits, read_row, samples_per_step, step_soak_time):
