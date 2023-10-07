@@ -2,11 +2,12 @@
 import argparse
 import csv
 import datetime
+from typing import List
 import ivi
-import time
+from quantiphy import Quantity
 import os
 
-from common_step_execution import Dut, FourWireResistanceCommand, Instrument, Step2, Res4WDutSettings, Step3, TransferDirection, generate_resistance_transfer_steps, resistance_is_4w, Res2WDutSettings, run_procedure
+from common_step_execution import Dut, FourWireResistanceCommand, Instrument, Step2, Res4WDutSettings, Step3, TransferDirection, disable_manual_prompt_for_steps_with_same_dut, generate_resistance_transfer_steps, resistance_is_4w, Res2WDutSettings, run_procedure
 
 OUTPUT_FILE = 'ks3458a-k2000-20-res-tempco-log.csv'
 FIELDNAMES = ('datetime', 'dut_setting', 'dut', 'ag3458a_2_ohm', 'ag3458a_2_range', 'ag3458a_2_delay', 'temp_2', 'last_acal_2',
@@ -48,10 +49,12 @@ def main():
     ag3458a = Instrument('ag3458a_2', FourWireResistanceCommand(range=args.dut_value))
     sr104_dut = Dut(name='SR104', setting='10 kOhm', dut_setting_cmd=Res4WDutSettings(value=10e3))
     f5450a_dut = Dut(name='Fluke 5450A', setting='', dut_setting_cmd=Res4WDutSettings())
-    subject_dut = Dut(name=args.dut, setting=f'{args.dut_value} Ohm', dut_setting_cmd=(Res4WDutSettings() if resistance_is_4w(args.dut_value) else Res2WDutSettings()))
-    steps = generate_resistance_transfer_steps(ag3458a, sr104_dut, f5450a_dut, args.dut_value, TransferDirection.FORWARD)
-    steps.append(Step3(subject_dut, [ag3458a], True, True))
-    steps.extend(generate_resistance_transfer_steps(ag3458a, sr104_dut, f5450a_dut, args.dut_value, TransferDirection.REVERSE))
+    subject_dut = Dut(name=args.dut, setting=Quantity(args.dut_value, 'Ohm'), dut_setting_cmd=(Res4WDutSettings(value=args.dut_value, range=args.dut_value) if resistance_is_4w(args.dut_value) else Res2WDutSettings(value=args.dut_value, range=args.dut_value)))
+    steps = generate_resistance_transfer_steps(ag3458a, sr104_dut, f5450a_dut, subject_dut, TransferDirection.FORWARD)[:-1]
+    steps[0].manual_prompt = False
+    steps.append(Step3(subject_dut, [Instrument(ag3458a.name, setting=FourWireResistanceCommand(range=ag3458a.setting.range, allow_acal=True))], manual_prompt=True, run_until_interrupted=True))
+    steps.extend(generate_resistance_transfer_steps(ag3458a, sr104_dut, f5450a_dut, subject_dut, TransferDirection.REVERSE)[1:])
+    steps = disable_manual_prompt_for_steps_with_same_dut(steps)
 
     with open(OUTPUT_FILE, 'a', newline='') as csv_file:
         initial_size = os.fstat(csv_file.fileno()).st_size
@@ -89,8 +92,9 @@ def init_func():
     return {'ag3458a_2': ag3458a_2, 'k2000_20': k2000_20}
 
 
-def read_row(inits, instruments):
+def read_row(inits, instruments: List[Instrument]):
     ag3458a_2 = inits['ag3458a_2']
+    ag3458a_2_instrument = instruments[0]
     k2000_20 = inits['k2000_20']
     row = {}
     row['datetime'] = datetime.datetime.utcnow().isoformat()
@@ -99,8 +103,8 @@ def read_row(inits, instruments):
         do_acal_3458a_2 = False
         temp_2 = ag3458a_2.utility.temp
         ag3458a_2.last_temp = datetime.datetime.utcnow()
-        if ((datetime.datetime.utcnow() - ag3458a_2.last_acal).total_seconds() > 24 * 3600) \
-                or (abs(ag3458a_2.last_acal_temp - temp_2) >= 1):
+        if ag3458a_2_instrument.setting.allow_acal and ((datetime.datetime.utcnow() - ag3458a_2.last_acal).total_seconds() > 24 * 3600) \
+                or (abs(ag3458a_2.last_acal_temp - temp_2) >= 0.5):
             do_acal_3458a_2 = True
         if do_acal_3458a_2:
             acal_3458a(ag3458a_2, temp_2)

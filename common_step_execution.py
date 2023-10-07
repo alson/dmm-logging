@@ -9,6 +9,7 @@ from typing import Optional, List, Union
 import ivi
 import time
 import os
+from quantiphy import Quantity
 
 import vxi11
 
@@ -69,17 +70,23 @@ class AcCurrentDutSettings(DutSettingCommand):
 class InstrumentSettingCommand:
     range: Optional[float] = None
     measurement_function: Optional[str] = None
+    allow_acal: bool = False
 
     def __str__(self):
         return f'{self.measurement_function} {self.range:e}'
 
     def with_range(self, range_: float) -> 'InstrumentSettingCommand':
-        return InstrumentSettingCommand(range_, self.measurement_function)
+        return InstrumentSettingCommand(range_, self.measurement_function, self.allow_acal)
 
 
 @dataclass
 class FourWireResistanceCommand(InstrumentSettingCommand):
     measurement_function: str = 'four_wire_resistance'
+
+
+@dataclass
+class TwoWireResistanceCommand(InstrumentSettingCommand):
+    measurement_function: str = 'two_wire_resistance'
 
 
 @dataclass
@@ -111,6 +118,11 @@ class Instrument:
 
     def with_range(self, range: float) -> 'Instrument':
         return Instrument(self.name, self.setting.with_range(range))
+    def with_resistance_range(self, range: float) -> 'Instrument':
+        if resistance_is_4w(range):
+            return Instrument(self.name, FourWireResistanceCommand(range, allow_acal=self.setting.allow_acal))
+        else:
+            return Instrument(self.name, TwoWireResistanceCommand(range, allow_acal=self.setting.allow_acal))
 
     def range_max(self):
         if self.name.startswith('ag3458a_'):
@@ -179,21 +191,46 @@ def run_procedure(csvw, procedure: List[Step3], inits, read_row, samples_per_ste
         beep()
 
 
-def generate_resistance_transfer_steps(instrument: Instrument, reference: Dut, transfer: Dut, target_value: float, direction: TransferDirection) -> List[Step3]:
+def generate_resistance_transfer_steps(instrument: Instrument, reference: Dut, transfer: Dut, target: Dut, direction: TransferDirection) -> List[Step3]:
+    """
+    Generates a list of steps to transfer resistance from a reference to a target, obviously via a transfer standard that can source and decade value from reference to target.
+
+    The transfer between ranges takes place by measuring the lowest value on its range, then measuring the same value on one range up, until the target value is reached. It is assumed that reference and transfer are short-term stable, but target may not be as stable, so if target is used range transfer between the ranges, the transfer will be performed twice.
+
+    If the reference and target are in the same decade value, no steps are generated. If reference and target are one decade apart, the lowest of the two will be used for a single 1:10 transfer (twice if this is the target as noted above). If reference and target are further apart, transfer is used for the range transfers from the reference range to the target range.
+    """
     transfers = []
     if direction == TransferDirection.FORWARD:
-        transfers = [reference] + generate_resistance_range(instrument, transfer, reference.dut_setting_cmd.value, target_value)
+        start_value = reference.dut_setting_cmd.value
+        end_value = target.dut_setting_cmd.value
+        transfers = [reference] + generate_resistance_range(instrument, transfer, start_value, end_value, reference, target, direction) + [target]
     elif direction == TransferDirection.REVERSE:
-        transfers = generate_resistance_range(instrument, transfer, target_value, reference.dut_setting_cmd.value) + [reference]
-    return list(generate_resistance_steps(instrument, transfers))
+        start_value = target.dut_setting_cmd.value
+        end_value = reference.dut_setting_cmd.value
+        transfers = [target] + generate_resistance_range(instrument, transfer, start_value, end_value, reference, target, direction) + [reference]
+    return list(generate_resistance_steps(instrument, transfers, reference.name, target.name))
 
 
-def generate_resistance_range(instrument: Instrument, transfer: Dut, start_value: float, end_value: float) -> List[Dut]:
+def generate_resistance_range(instrument: Instrument, transfer: Dut, start_value: float, end_value: float, reference: Dut, target: Dut, direction: TransferDirection) -> List[Dut]:
     start_decade = get_value_decade_for_instrument(instrument, start_value)
     end_decade = get_value_decade_for_instrument(instrument, end_value)
+    if direction == TransferDirection.FORWARD:
+        reference_value = start_value
+        target_value = end_value
+    elif direction == TransferDirection.REVERSE:
+        reference_value = end_value
+        target_value = start_value
+    reference_decade = get_value_decade_for_instrument(instrument, reference_value)
+    target_decade = get_value_decade_for_instrument(instrument, target_value)
     if start_decade == end_decade:
         return []
-    return [Dut(transfer.name, transfer.setting, Res4WDutSettings(value=value, range=value)) for value in decade_transfer_range(start_decade, end_decade)]
+    # XXX: This logic is too simple / wrong: whether to use the reference or target for range transfer does not depend on just start and end value, but also on the direction (if reference is at start or end)
+    elif abs(start_decade - end_decade) == 1:
+        if target_decade < reference_decade:
+            return [target]
+        else:
+            return []
+    return [Dut(transfer.name, str(Quantity(value, 'Ohm')), Res4WDutSettings(value=value, range=value)) for value in decade_transfer_range(start_decade, end_decade)]
 
 
 def decade_transfer_range(start_decade: int, end_decade: int) -> List[float]:
@@ -214,24 +251,60 @@ def get_value_decade_for_instrument(instrument: Instrument, value: float) -> int
     return ceil(log10(value))
 
 
-def generate_resistance_steps(instrument: Instrument, transfers: List[Dut]) -> List[Step3]:
+def generate_resistance_steps(instrument: Instrument, transfers: List[Dut], reference_name: str, target_name: str) -> List[Step3]:
     previous_transfer = None
     previous_decade_value = None
+    """
+    target1/1 target1/10 ref10/10 1
+    ref10/10 target1/10 target1/1 2
+    target100/100 ref10/100 ref10/10
+    ref10/10 ref10/100 target100/100
+    """
+    if len(transfers) == 3 and transfers[1].name == target_name:
+        [transfer1, transfer2, transfer3] = transfers
+        [transfer_decade1, transfer_decade2, transfer_decade3] = map(lambda t: get_value_decade_for_instrument(instrument, t.dut_setting_cmd.value), transfers)
+        if transfer1.name == target_name and transfer2.name == target_name and transfer3.name == reference_name \
+                and transfer_decade1 + 1 == transfer_decade2 + 1 == transfer_decade3:
+            yield Step3(transfer1, [instrument.with_resistance_range(transfer1.dut_setting_cmd.value)], True)
+            yield Step3(transfer2, [instrument.with_resistance_range(transfer3.dut_setting_cmd.value)])
+            yield Step3(transfer1, [instrument.with_resistance_range(transfer1.dut_setting_cmd.value)])
+            yield Step3(transfer2, [instrument.with_resistance_range(transfer3.dut_setting_cmd.value)])
+            yield Step3(transfer3, [instrument.with_resistance_range(transfer3.dut_setting_cmd.value)], True)
+        elif transfer1.name == reference_name and transfer2.name == target_name and transfer3.name == target_name \
+                and transfer_decade1 == 1 + transfer_decade2 == 1+ transfer_decade3:
+            yield Step3(transfer1, [instrument.with_resistance_range(transfer1.dut_setting_cmd.value)], True)
+            yield Step3(transfer2, [instrument.with_resistance_range(transfer1.dut_setting_cmd.value)], True)
+            yield Step3(transfer3, [instrument.with_resistance_range(transfer3.dut_setting_cmd.value)])
+            yield Step3(transfer2, [instrument.with_resistance_range(transfer1.dut_setting_cmd.value)])
+            yield Step3(transfer3, [instrument.with_resistance_range(transfer3.dut_setting_cmd.value)])
+        else:
+            raise ValueError(f'Unable to generate steps for transfers: {transfers}')
+        return
     for transfer in transfers:
         transfer_decade_value = get_value_decade_for_instrument(instrument, transfer.dut_setting_cmd.value)
         if previous_transfer:
             if previous_decade_value < transfer_decade_value:
-                yield Step3(previous_transfer, [instrument.with_range(transfer.dut_setting_cmd.value)])
-                yield Step3(transfer, [instrument.with_range(transfer.dut_setting_cmd.value)], previous_transfer.name != transfer.name)
+                yield Step3(previous_transfer, [instrument.with_resistance_range(transfer.dut_setting_cmd.value)])
+                yield Step3(transfer, [instrument.with_resistance_range(transfer.dut_setting_cmd.value)], previous_transfer.name != transfer.name)
             elif previous_decade_value > transfer_decade_value:
-                yield Step3(transfer, [instrument.with_range(previous_transfer.dut_setting_cmd.value)], previous_transfer.name != transfer.name)
-                yield Step3(transfer, [instrument.with_range(transfer.dut_setting_cmd.value)])
+                yield Step3(transfer, [instrument.with_resistance_range(previous_transfer.dut_setting_cmd.value)], previous_transfer.name != transfer.name)
+                yield Step3(transfer, [instrument.with_resistance_range(transfer.dut_setting_cmd.value)])
             else:
-                yield Step3(transfer, [instrument.with_range(transfer.dut_setting_cmd.value)], previous_transfer.name != transfer.name)
+                yield Step3(transfer, [instrument.with_resistance_range(transfer.dut_setting_cmd.value)], previous_transfer.name != transfer.name)
         else:
-            yield Step3(transfer, [instrument.with_range(transfer.dut_setting_cmd.value)], True)
+            yield Step3(transfer, [instrument.with_resistance_range(transfer.dut_setting_cmd.value)], True)
         previous_transfer = transfer
         previous_decade_value = transfer_decade_value
+
+
+def disable_manual_prompt_for_steps_with_same_dut(steps: List[Step3]) -> List[Step3]:
+    previous_step = None
+    steps_with_manual_prompt_disabled = steps[:]
+    for step in steps_with_manual_prompt_disabled:
+        if previous_step and step.dut.name == previous_step.dut.name:
+            step.manual_prompt = False
+        previous_step = step
+    return steps_with_manual_prompt_disabled
 
 
 def execute_step(csvw, step: Union[Step, Step2, Step3], previous_step: Union[Step, Step2, Step3], inits, read_row, samples_per_step, step_soak_time):
