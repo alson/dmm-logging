@@ -185,7 +185,7 @@ def run_procedure(csvw, procedure: List[Step3], inits, read_row, samples_per_ste
     try:
         for step_number, step in enumerate(procedure):
             print(f'Step {step_number+1}/{len(procedure)}')
-            execute_step(csvw, step, previous_step, inits, read_row, samples_per_step, step_soak_time)
+            execute_step(csvw, step_number, step, previous_step, inits, read_row, samples_per_step, step_soak_time)
             previous_step = step
     finally:
         beep()
@@ -307,7 +307,7 @@ def disable_manual_prompt_for_steps_with_same_dut(steps: List[Step3]) -> List[St
     return steps_with_manual_prompt_disabled
 
 
-def execute_step(csvw, step: Union[Step, Step2, Step3], previous_step: Union[Step, Step2, Step3], inits, read_row, samples_per_step, step_soak_time):
+def execute_step(csvw, step_number: int, step: Union[Step, Step2, Step3], previous_step: Union[Step, Step2, Step3], inits, read_row, samples_per_step, step_soak_time):
     if not isinstance(step, Step3):
         step = step.to_step3()
     if previous_step and not isinstance(previous_step, Step3):
@@ -319,7 +319,7 @@ def execute_step(csvw, step: Union[Step, Step2, Step3], previous_step: Union[Ste
     setup_dut(step, inits)
     setup_instrument(step, previous_step, inits, step_soak_time)
     wait_for_settle(step, step_soak_time, step.manual_prompt)
-    sample_input(step, inits, csvw, read_row, samples_per_step)
+    sample_input(step_number, step, inits, csvw, read_row, samples_per_step)
 
 
 def setup_dut(step: Step3, inits):
@@ -490,7 +490,7 @@ def wait_for_settle(step: Step3, step_soak_time, manual_prompt=False):
     time.sleep(step_soak_time)
 
 
-def sample_input(step: Step3, inits, csvw, read_row, samples_per_step):
+def sample_input(step_number: int, step: Step3, inits, csvw, read_row, samples_per_step):
     if step.run_until_interrupted:
         sample_no = 1
         try:
@@ -498,10 +498,13 @@ def sample_input(step: Step3, inits, csvw, read_row, samples_per_step):
                 take_single_sample(step, inits, csvw, read_row, sample_no)
                 sample_no += 1
         except KeyboardInterrupt:
-            pass
+            raise StepInterrupted(step_number)
     else:
         for sample_no in range(1, samples_per_step+1):
-            take_single_sample(step, inits, csvw, read_row, sample_no)
+            try:
+                take_single_sample(step, inits, csvw, read_row, sample_no)
+            except KeyboardInterrupt:
+                raise StepInterrupted(step_number)
 
 
 def take_single_sample(step: Step3, inits, csvw, read_row, sample_no):
@@ -534,3 +537,9 @@ def beep():
 
 def resistance_is_4w(value) -> bool:
     return value <= 1e6
+
+
+class StepInterrupted(Exception):
+    def __init__(self, step_number: int):
+        self.step_number = step_number
+        super().__init__(f'Step interrupted at step {step_number}')

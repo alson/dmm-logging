@@ -2,27 +2,28 @@
 import argparse
 import csv
 import datetime
+import sys
 from typing import List
 import ivi
 from quantiphy import Quantity
 import os
+from copy import deepcopy
 
-from common_step_execution import Dut, FourWireResistanceCommand, Instrument, Step2, Res4WDutSettings, Step3, TransferDirection, disable_manual_prompt_for_steps_with_same_dut, generate_resistance_transfer_steps, resistance_is_4w, Res2WDutSettings, run_procedure
+from common_step_execution import Dut, FourWireResistanceCommand, Instrument, Step2, Res4WDutSettings, Step3, StepInterrupted, TransferDirection, disable_manual_prompt_for_steps_with_same_dut, generate_resistance_transfer_steps, resistance_is_4w, Res2WDutSettings, run_procedure
 
 OUTPUT_FILE = 'ks3458a-k2000-20-res-tempco-log.csv'
 FIELDNAMES = ('datetime', 'dut_setting', 'dut', 'ag3458a_2_ohm', 'ag3458a_2_range', 'ag3458a_2_delay', 'temp_2', 'last_acal_2',
               'last_acal_2_cal72', 'k2000_20_pt100_ohm')
-WRITE_INTERVAL_SECONDS = 900
 DEBUG = False
-SAMPLE_INTERVAL = 0
 SAMPLES_PER_STEP = 16
-STEP_SOAK_TIME = 300
+STEP_SOAK_TIME = 150
 if DEBUG:
     SAMPLES_PER_STEP = 2
-    STEP_SOAK_TIME = 1
-    WRITE_INTERVAL_SECONDS = 0
+    STEP_SOAK_TIME = 0
 
 def acal_3458a(ag3458a, temp):
+    print()
+    print(f'Running ACAL on {ag3458a._interface.name} at {temp}')
     if DEBUG:
         ag3458a.last_acal_cal72 = 'keep'
         return
@@ -50,18 +51,97 @@ def main():
     sr104_dut = Dut(name='SR104', setting='10 kOhm', dut_setting_cmd=Res4WDutSettings(value=10e3))
     f5450a_dut = Dut(name='Fluke 5450A', setting='', dut_setting_cmd=Res4WDutSettings())
     subject_dut = Dut(name=args.dut, setting=Quantity(args.dut_value, 'Ohm'), dut_setting_cmd=(Res4WDutSettings(value=args.dut_value, range=args.dut_value) if resistance_is_4w(args.dut_value) else Res2WDutSettings(value=args.dut_value, range=args.dut_value)))
-    steps = generate_resistance_transfer_steps(ag3458a, sr104_dut, f5450a_dut, subject_dut, TransferDirection.FORWARD)[:-1]
+    start_steps = generate_resistance_transfer_steps(ag3458a, sr104_dut, f5450a_dut, subject_dut, TransferDirection.FORWARD)[:-1]
+    steps = []
+    steps.extend(start_steps)
+    subject_dut_step = Step3(subject_dut, [Instrument(ag3458a.name, setting=FourWireResistanceCommand(range=ag3458a.setting.range, allow_acal=True))], manual_prompt=True, run_until_interrupted=True)
+    steps.append(subject_dut_step)
+    end_steps = generate_resistance_transfer_steps(ag3458a, sr104_dut, f5450a_dut, subject_dut, TransferDirection.REVERSE)[1:]
+    steps.extend(end_steps)
+    steps = disable_manual_prompt_for_steps_with_same_dut(deepcopy(steps))
     steps[0].manual_prompt = False
-    steps.append(Step3(subject_dut, [Instrument(ag3458a.name, setting=FourWireResistanceCommand(range=ag3458a.setting.range, allow_acal=True))], manual_prompt=True, run_until_interrupted=True))
-    steps.extend(generate_resistance_transfer_steps(ag3458a, sr104_dut, f5450a_dut, subject_dut, TransferDirection.REVERSE)[1:])
-    steps = disable_manual_prompt_for_steps_with_same_dut(steps)
 
     with open(OUTPUT_FILE, 'a', newline='') as csv_file:
         initial_size = os.fstat(csv_file.fileno()).st_size
         csvw = csv.DictWriter(csv_file, fieldnames=FIELDNAMES)
         if initial_size == 0:
             csvw.writeheader()
-        run_procedure(csvw, steps, inits, read_row, SAMPLES_PER_STEP, STEP_SOAK_TIME)
+        while True:
+            try:
+                run_procedure(csvw, steps, inits, read_row, SAMPLES_PER_STEP, STEP_SOAK_TIME)
+            except StepInterrupted as step_interrupted:
+                for instrument in steps[step_interrupted.step_number].instruments:
+                    inits[instrument.name]._interface.clear()
+                steps = ask_user_for_procedure(step_interrupted.step_number, steps, start_steps, subject_dut_step, end_steps, inits)
+                steps = disable_manual_prompt_for_steps_with_same_dut(deepcopy(steps))
+            else:
+                break
+
+
+def ask_user_for_procedure(step_number: int, steps: List[Step3], start_steps: List[Step3], subject_dut_step: Step3, end_steps: List[Step3], inits: dict):
+    if step_equal_except_manual_prompt(steps[step_number], subject_dut_step):
+        return ask_user_for_procedure_subject_dut_step(step_number, steps, start_steps, subject_dut_step, end_steps, inits)
+    else:
+        return ask_user_for_procedure_other_step(step_number, steps, start_steps, subject_dut_step, end_steps, inits)
+
+def ask_user_for_procedure_subject_dut_step(step_number: int, steps: List[Step3], start_steps: List[Step3], subject_dut_step: Step3, end_steps: List[Step3], inits: dict):
+    while True:
+        print('Subject step interrupted, do you want to:')
+        print('0. Immediately quit')
+        print('1. Continue from the interrupted step')
+        print('2. Run acal and continue from interrupted step')
+        print('3. Continue from next step')
+        print('4. Repeat from the beginning')
+        print('5. End the measurement')
+        print('6. Measure reference resistor and continue')
+
+        response = input('Enter 0, 1, 2, 3, 4, 5 or 6: ')
+        if response == '0':
+            sys.exit()
+        elif response == '1':
+            return steps[step_number:]
+        elif response == '2':
+            acal_3458a(inits[subject_dut_step.instruments[0].name], 'manual_acal')
+            return steps[step_number:]
+        elif response == '3':
+            return steps[step_number+1:]
+        elif response == '4':
+            return start_steps + [subject_dut_step] + end_steps
+        elif response == '5':
+            return end_steps
+        elif response == '6':
+            return end_steps + start_steps[1:] + [subject_dut_step] + end_steps
+
+
+def ask_user_for_procedure_other_step(step_number: int, steps: List[Step3], start_steps: List[Step3], subject_dut_step: Step3, end_steps: List[Step3], inits: dict):
+    while True:
+        print('Step interrupted, do you want to:')
+        print('0. Immediately quit')
+        print('1. Continue from the interrupted step')
+        print('2. Run acal and continue from interrupted step')
+        print('3. Continue from next step')
+        print('4. Repeat from the beginning')
+
+        response = input('Enter 0, 1, 2, 3, or 4: ')
+        if response == '0':
+            sys.exit()
+        elif response == '1':
+            return steps[step_number:]
+        elif response == '2':
+            acal_3458a(inits['ag3458a_2'], 'manual_acal')
+            return steps[step_number:]
+        elif response == '3':
+            return steps[step_number+1:]
+        elif response == '4':
+            return start_steps + [subject_dut_step] + end_steps
+
+
+def step_equal_except_manual_prompt(step1: Step3, step2: Step3):
+    step1_copy = deepcopy(step1)
+    step2_copy = deepcopy(step2)
+    step1_copy.manual_prompt = False
+    step2_copy.manual_prompt = False
+    return step1_copy == step2_copy
 
 
 def init_func():
@@ -84,11 +164,10 @@ def init_func():
         ag3458a_2.last_acal = datetime.datetime.utcnow()
         ag3458a_2.last_acal_temp = temp_2
         ag3458a_2.last_acal_cal72 = 'test'
-        # finish_acal_3458a(ag3458a_2)
     else:
         ag3458a_2.last_acal = datetime.datetime.utcnow()
         ag3458a_2.last_acal_temp = temp_2
-        acal_3458a(ag3458a_2, temp_2)
+    acal_3458a(ag3458a_2, temp_2)
     return {'ag3458a_2': ag3458a_2, 'k2000_20': k2000_20}
 
 
