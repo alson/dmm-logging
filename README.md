@@ -6,7 +6,9 @@ This is a loose collection of scripts to collect and plot data from several DMMs
 
 `thp_log.py` and `start_thp_log.sh` log the temperature, humidity and pressure from a BME280 sensor connected via I2C.
 
-`common_plotting.py` module with commonly used functions for importing, processing and plotting data.
+`common_step_execution.py` contains functions for executing a series of steps with different duts / measurement instruments / settings, used for example for scripted sweeps and range transfers.
+
+`manual-log.py` is similar to other scripts that log data, except that this receives its data using manual input instead of automation. It has some smarts like history to make data entry more efficient.
 
 ## Experiments
 
