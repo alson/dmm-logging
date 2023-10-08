@@ -66,7 +66,7 @@ Scripts:
 Measure the tempco of manganin resistance standards against SR104.
 
 Scripts:
-* `ks3458a-k2000-20-res-tempco-log.py`: Transfer from SR104, then measure DUT in same range, and then back to SR104. To be extended with doing transfers more often during the measurement at different temperatures.
+* `ks3458a-k2000-20-res-tempco-log.py`: Transfer from SR104, then measure DUT in same range, and then back to SR104.
 
 ### ACV stability measurements
 
