@@ -21,6 +21,15 @@ Scripts:
 * `ks3458a1-4w-res-nplc-aper-test.py`: Compare NPLC 100 vs APER 1 with resistance measurements on the 3458A.
 * `ks3458a-dcv-guard-test.py`: Test the effect of the guard open / to lo switch on the 3458A.
 
+#### 3458A tempco
+
+Measure the 3458A tempco on DCV and resistance relative to other standards.
+
+Scripts:
+* `ks3458a-dcv-tc-log-w-acal.py`: Measure tempco of 3458A built-in voltage reference against external voltage reference.
+* `ks3458a-k2000-x2-sr104-log.py`: Measure tempco of 3458A R207 against SR104 (corrected for its temperature using its thermistor).
+* `ks3458a-wo-acal-k2000-x2-sr104-log.py`: Meaure tempco of 3458A 10 kOhm range against  SR104 (corrected for its temperature using its thermistor).
+
 ### SR104 stability
 
 Scripts:
