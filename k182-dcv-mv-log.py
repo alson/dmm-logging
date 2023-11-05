@@ -54,7 +54,7 @@ def read_row(k182):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_positional_argument('output_file_suffix', nargs='?', default=None, type=str)
+    parser.add_argument('output_file_suffix', type=str, nargs='?')
     args = parser.parse_args()
     if args.output_file_suffix:
         output_file = OUTPUT_FILE.replace('.csv', f'-{args.output_file_suffix}.csv')

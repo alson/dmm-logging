@@ -486,7 +486,7 @@ def get_dut(step: Step3, inits):
 
 def wait_for_settle(step: Step3, step_soak_time, manual_prompt=False):
     if manual_prompt:
-        time.sleep(step_soak_time * 2)
+        time.sleep(step_soak_time * 5)
     time.sleep(step_soak_time)
 
 

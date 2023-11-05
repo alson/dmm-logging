@@ -5,10 +5,11 @@ import time
 import datetime
 import csv
 import os
+import argparse
 
-OUTPUT_FILE = 'w4920-acv-log.csv'
+OUTPUT_FILE = 'w4920-acv-log2.csv'
 SAMPLE_INTERVAL = 10
-FIELDNAMES = ('datetime', 'w4920_acv', 'w4920_freq')
+FIELDNAMES = ('datetime', 'dut', 'w4920_acv', 'w4920_freq')
 WRITE_INTERVAL_SECONDS = 3600
 DEBUG = False
 
@@ -29,19 +30,23 @@ def init_func():
 loop_count = 0
 
 
-def loop_func(csvw, w4920):
-    row = {}
+def loop_func(csvw, dut, w4920):
+    row = {'dut': dut}
     row['datetime'] = datetime.datetime.utcnow().isoformat()
     w4920.measurement.initiate()
     time.sleep(10)
     row['w4920_acv'] = w4920.measurement.fetch(0)
-    row['w4920_freq'] = None
+    row['w4920_freq'] = w4920.measurement.freq
     print(f"{row['w4920_acv']} V, {row['w4920_freq']} Hz")
     csvw.writerow(row)
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Log Wavetek 4950 measurements')
+    parser.add_argument('dut', type=str)
     inits = init_func()
+
+    args = parser.parse_args()
 
     last_csvw_write = datetime.datetime(2018, 1, 1)
     with open(OUTPUT_FILE, 'a', newline='') as csv_file:
@@ -50,7 +55,7 @@ if __name__ == '__main__':
         if initial_size == 0:
             csvw.writeheader()
         while True:
-            loop_func(csvw, **inits)
+            loop_func(csvw, args.dut, **inits)
             time.sleep(SAMPLE_INTERVAL)
             if (datetime.datetime.utcnow() - last_csvw_write) \
                     > datetime.timedelta(seconds=WRITE_INTERVAL_SECONDS):
