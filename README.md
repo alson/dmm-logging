@@ -87,6 +87,15 @@ Scripts:
 * `ks3458a-acv-log.py`: Log ACV on 3458A
 * `w4920-acv-log.py`: Log ACV on Wavetek 4920
 
+### ACV transfers
+
+Comparing 4x F510 against F7001 using ks3458a + W4950 + W4920 using round-robin measurements.
+
+Scripts:
+* `ks3458a1-f510-reading.py`: Rotate through standards on KS3458a
+* `w4920-f510-reading.py`: Rotate through standards on W4920
+* `w4950-f510-reading.py`: Rotate through standards on W4950 (requiring manual ACV mode switching because this feature is broken on my W4950)
+
 ### SMUs
 
 Scripts:
